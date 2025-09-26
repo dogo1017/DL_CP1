@@ -1,4 +1,4 @@
-#DL 1st, debugging notes
+#DL 1st, debugging notes 
 
 # Syntax Error - grammar error
 #print"Douglas"
@@ -7,4 +7,11 @@
 numone = "2"
 numtwo = "5"
 
-print(numone + numtwo)
+#print(numone + numtwo)
+
+# Run-time Error
+import random
+while True:
+    denominator = random.randint(0,5) 
+
+    print(10/denominator)
