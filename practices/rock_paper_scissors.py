@@ -16,8 +16,38 @@ while True:
 
     if bot_guess == 1:
         if player_guess == bot_guess:
-            print("You tied")
+            print("""__________               __    
+\\______   \\ ____   ____ |  | __
+ |       _//  _ \\_/ ___\\|  |/ /
+ |    |   (  <_> )  \\___|    < 
+ |____|_  /\\____/ \\___  >__|_ \\
+        \\/            \\/     \\/
+""")
+            print("""_____.___.                __  .__           .___
+\\__  |   | ____  __ __  _/  |_|__| ____   __| _/
+ /   |   |/  _ \\|  |  \\ \\   __\\  |/ __ \\ / __ | 
+ \\____   (  <_> )  |  /  |  | |  \\  ___// /_/ | 
+ / ______|\\____/|____/   |__| |__|\\___  >____ | 
+ \\/                                   \\/     \\/ """)
         elif player_guess == 2:
             print("You won")
         else:
             print("You lost")
+    
+    elif bot_guess == 2:
+        if player_guess == bot_guess:
+            print("You tied")
+        elif player_guess == 3:
+            print("You won")
+        else:
+            print("You lost")
+
+    else:
+        if player_guess == bot_guess:
+            print("You tied")
+        elif player_guess == 1:
+            print("You won")
+        else:
+            print("You lost")
+
+            
