@@ -1,0 +1,10 @@
+#DL 1st, pseudocode tic tac toe practice
+
+game_finish = False
+x_positions = empty list
+o_positions = empty list 
+board = 1 | 2 | 3
+        
+
+loop until game_finish's value is True
+    display 
