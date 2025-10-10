@@ -4,9 +4,9 @@ game_finish = no
 dictionary with lists inside giving all possible win positions (win_cords = {“v1” = [1, 4, 7]...})
 initialize empty list named current_player_positions
 initialize computer and plater scores as 0
-board = """1 | 2 | 3 
-        4 | 5 | 6
-        7 | 8 | 9"""
+board = """[1] [2] [3] 
+        [4] [5] [6]
+        [7] [8] [9]"""
         
 loop until game_finish's value is yes
     display board
@@ -35,6 +35,6 @@ loop until game_finish's value is yes
         display that the game was a tie
         display player and bots scores
         ask user if they want to end the game (yes or no)
-
+        if input is yes then set game_finish to yes
         
 
