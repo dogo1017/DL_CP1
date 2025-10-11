@@ -1,16 +1,17 @@
-#DL 1st, pseudocode tic tac toe practice
+# Dl 1st, tic tacc toe pseudocode practice
 
 game_finish = no
 dictionary with lists inside giving all possible win positions (win_cords = {“v1” = [1, 4, 7]...})
 initialize empty list named current_player_positions
-initialize computer and plater scores as 0
+initialize empty list named computer_positions
+initialize computer and player scores as 0
 board = """[1] [2] [3] 
         [4] [5] [6]
         [7] [8] [9]"""
         
 loop until game_finish's value is yes
     display board
-    player_input = input of a number
+    player_input = input of a number (1–9 not already taken)
     add player input to list current_player_positions
     replace spot on board using .replace with player_input being swapped with x
 
@@ -18,23 +19,39 @@ loop until game_finish's value is yes
         add 1 to player score
         input to ask player if they want to play again in variable done
         if done = "yes":
-            break
+            reset board, clear both player and computer position lists
+            continue to start of loop
         else:
-            continue to start of loop 
-    bot_guess_paths = [win_cords that dont share any numbers with current_player_positions]
+            set game_finish to yes
+            break
+
+    bot_guess_paths = [win_cords that dont share any numbers with current_player_positions or computer_positions]
     if two items in player_positions are in at least one of the possible win positions:
         bot_guess_choices = [win_cords with at least 2 player positions in it]
-        bot_choice = random.choice to chose random item in bot_guess_choices
+        bot_choice = random.choice to choose random item in bot_guess_choices
         set bot_choice as the number that the user does not have in the win_cord chosen
     else if there are items in bot_guess_paths:
-        bot_choice = random item from bot_guess_choices using random.choice
-        bot_choice = random number from list inside of chosen dictionaries value
+        bot_choice = random item from bot_guess_paths using random.choice
+        bot_choice = random number from list inside of chosen dictionary’s value not already taken
     else if bot_guess_paths has no items and there are spots not taken on the board:
-        bot_choice = random spot on board not taken by player
+        bot_choice = random spot on board not taken by player or computer
     else:
         display that the game was a tie
-        display player and bots scores
+        display player and bot scores
         ask user if they want to end the game (yes or no)
         if input is yes then set game_finish to yes
-        
+        else reset board, clear both position lists
+        continue to start of loop
 
+    add bot_choice to computer_positions
+    replace spot on board using .replace with bot_choice being swapped with o
+
+    if computer_positions = one of possible win positions in win_cords:
+        add 1 to computer score
+        input to ask player if they want to play again in variable done
+        if done = "yes":
+            reset board, clear both player and computer position lists
+            continue to start of loop
+        else:
+            set game_finish to yes
+            break
