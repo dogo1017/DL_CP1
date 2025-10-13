@@ -5,6 +5,9 @@ run = "yes"
 #initialize run_input as "yes"
 run_input = "yes"
 
+#Bad answers in a list
+basic_answers = ["1234", "password1", "Password1", "12345", "again"]
+
 #loop entire code while the value of the variable run is "yes"
 while run == "yes":
     #initialize length_check, uppercase_check, lowercase_check, number_check, and special_char_check all with the value of 0
@@ -39,26 +42,49 @@ while run == "yes":
         #else:
         else:
             #display that the character being looped is not a valid character that can be used and break
-            print(f"''")
-
+            print(f"'{char}' is not a valid character")
+    if user_pass == basic_answers:
+        print("You can do better than that")
+        continue
     #pass_strength = all check variables added together
+    pass_strength = length_check + uppercase_check + lowercase_check + number_check + special_char_check
     #display pass_strength to user
-
+    print(f"Password strength (1-5): {pass_strength}")
     #if pass_strength is less than 5
-        #display info on the info that comes next showing what part of the password is weak
-    #if length_check = 0
+    if pass_strength < 5:
+        #display info on the data that comes next showing what part of the password is weak
+        print("Weak points in password:")
+    #if length_check has a value of 0
+    if length_check == 0:
         #display that the password needs to be greater than 8
-    #if uppercase_check = 0
+        print("Password should be 8 or more characters")
+    #if uppercase_check has a value of 0
+    if uppercase_check == 0:
         #display that the password needs to have an uppercase letter
-    #if lowercase_check = 0
+        print("password must include a uppercase letter")
+    #if lowercase_check has a value of 0
+    if lowercase_check == 0:
         #display that the password needs to have an lowercase letter
-    #if number_check = 0
+        print("password must include a lowercase letter")
+    #if number_check has a value of 0
+    if number_check == 0:
         #display that the password needs to include a number
-    #if special_char_check = 0
+        print("password must include a number")
+    #if special_char_check has a value of 0
+    if spec_char == 0:
         #display that the password needs to include a special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
+        print("password must include a special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")
 
     #loop until break:
-        #run_input = display question of if user want to try again (Yes/No) and use .strip() and .lower() to stupid proof
+    while True:
+        #run_input = input and display question of if user want to try again (Yes/No) and use .strip() and .lower() to stupid proof
+        run_input = input("Would you like to try again (Yes/No):\n").strip().lower()
         #if run_input equals yes or no then end loop
+        if run_input == "yes" or run_input == "no":
+            #set run as same value as run_input
+            run = run_input
+            break
         #else:
-            #print to type a valid input
+        else:
+            #display instructions to type a valid input
+            print("please type a valid answer") 
