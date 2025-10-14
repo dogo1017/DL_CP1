@@ -9,7 +9,7 @@ run_input = "yes"
 basic_answers = ["1234", "password1", "Password1", "12345", "again"]
 
 #loop entire code while the value of the variable run is "yes"
-while run == "yes":
+while run == "yes" or run == "y":
     #initialize length_check, uppercase_check, lowercase_check, number_check, and special_char_check all with the value of 0
     length_check = uppercase_check = lowercase_check = number_check = special_char_check = 0
     #spec_char = list with all special characters accepted (!@#$%^&*()_+-=[]{}|;:,.<>?)
@@ -80,7 +80,7 @@ while run == "yes":
         #run_input = input and display question of if user want to try again (Yes/No) and use .strip() and .lower() to stupid proof
         run_input = input("Would you like to try again (Yes/No):\n").strip().lower()
         #if run_input equals yes or no then end loop
-        if run_input == "yes" or run_input == "no":
+        if run_input == "yes" or run_input == "no" or run_input == "n" or run_input == "y":
             #set run as same value as run_input
             run = run_input
             break
