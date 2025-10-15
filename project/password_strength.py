@@ -71,7 +71,7 @@ while run == "yes" or run == "y":
         #display that the password needs to include a number
         print("password must include a number")
     #if special_char_check has a value of 0
-    if spec_char == 0:
+    if special_char_check == 0:
         #display that the password needs to include a special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
         print("password must include a special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")
 
