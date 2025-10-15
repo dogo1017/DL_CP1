@@ -6,7 +6,7 @@ run = "yes"
 run_input = "yes"
 
 #Bad answers in a list
-basic_answers = ["1234", "password1", "Password1", "12345", "again"]
+basic_answers = ["1234", "password1", "Password1", "12345", "again", "1234567890", "qwerty"]
 
 #loop entire code while the value of the variable run is "yes"
 while run == "yes" or run == "y":
