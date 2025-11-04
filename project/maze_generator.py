@@ -3,59 +3,87 @@
 import random
 import turtle as t
 
-maze_temp = [
-"WOWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWXW"
-]
+grid_rows = [[0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0]]
+
+grid_columns = [[0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0],
+             [0,0,0,0,0,0]]
+
+for row in range(len(grid_rows)):
+    for col in range(len(grid_rows[row])):
+        grid_rows[row][col] = random.randint(0, 1)
+
+for row in range(len(grid_rows)):
+    for col in range(len(grid_rows[row])):
+        if grid_rows[row][col] == 1:
+            grid_rows[row][col] = random.randint(1,2)
+
+for column in range(len(grid_columns)):
+    for row in range(len(grid_columns[column])):
+        grid_columns[column][row] = random.randint(0, 1)
+
+for column in range(len(grid_columns)):
+    for row in range(len(grid_columns[column])):
+        if grid_columns[column][row] == 1:
+            grid_columns[column][row] = random.randint(1,2)
+
+
+t.teleport(0,0)
+t.penup()
+t.back(25)
+t.left(90)
+t.forward(25)
+t.right(90)
+t.pendown()
+t.forward(25 * len(grid_rows[1]))
+
+t.penup()
+t.teleport(0,0)
+t.back(25)
+t.right(90)
+t.back(25)
+t.pendown()
+t.forward(25 * len(grid_rows[1]))
+t.right(90)
+t.forward((25 * len(grid_rows[1])))
+t.speed(0)
+
+for row in range(len(grid_rows)):
+    for col in range(len(grid_rows[row])):
+        if grid_rows[row][col] == 1:
+            t.pendown()
+        t.forward(25)
+        t.penup()
+    t.right(90)
+    t.forward(25)
+    t.right(90)
+    t.forward(25 * len(grid_rows[1]))
+    t.right(180)
+
+t.teleport(0,0)
+t.right(90)
+
+for column in range(len(grid_columns)):
+    for row in range(len(grid_columns[column])):
+        if grid_columns[column][row] == 1:
+            t.pendown()
+        t.forward(25)
+        t.penup()
+    t.right(-90)
+    t.forward(25)
+    t.right(-90)
+    t.forward(25 * len(grid_columns[1]))
+    t.right(180)
 
 
 
+t.done()
 
-vert_move_opts = []
-horz_move_opts = []
-cur_pos = [0,2,2]
-
-while True:
-    down_check = maze_temp[cur_pos[1]-2]
-    up_check = maze_temp[cur_pos[1]+2]
-    if cur_pos[2] + 2 == "W":
-        vert_move_opts.append(cur_pos[1])
-        horz_move_opts.append(cur_pos[2] + 2)
-    if cur_pos[2] - 2 == "W":
-        vert_move_opts.append(cur_pos[1])
-        horz_move_opts.append(cur_pos[2] - 2)
-    if down_check[cur_pos[2]] == "W":
-        vert_move_opts.append(cur_pos[1]-2)
-        horz_move_opts.append(cur_pos[2])
-    if up_check[cur_pos[2]] == "W":
-        vert_move_opts.append(cur_pos[1]+2)
-        horz_move_opts.append(cur_pos[2])
-    break
-
-print(vert_move_opts)
-print(horz_move_opts)
-
-
-
-
-
-# check if i of item below is open and next to it and i of item above if they are all walls then change current square to F and move onto an H square and check again using continue
-
-# set current square its on to check the list for open spots and choose a random one, then move to that square and set the previous square to H

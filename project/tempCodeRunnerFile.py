@@ -1,1 +1,1 @@
-paintballbecause
+print(grid_rows)
