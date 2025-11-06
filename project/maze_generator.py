@@ -3,6 +3,9 @@
 import random
 import turtle as t
 
+screen = t.Screen()
+t.tracer(0)
+
 def is_solvable(grid_rows):
     
     stack_unvisited = False
@@ -11,6 +14,7 @@ def is_solvable(grid_rows):
     y = 0
     stack_pos = 0
     visited = []
+    
     while stack_unvisited == False:
         if  [len(grid_rows[1]),len(grid_rows)] in stack:
             return True
@@ -20,20 +24,20 @@ def is_solvable(grid_rows):
             stack_pos += 1
             continue
         visited.append(stack[stack_pos])
-        if grid_rows[x+1][y] >= 0 and grid_rows[x+1][y] <= len(grid_rows[1]) and grid_rows[x+1][y] == 0:
-            stack.append([x+1, y])
-        if grid_rows[x-1][y] >= 0 and grid_rows[x-1][y] <= len(grid_rows[1]) and grid_rows[x-1][y] == 0:
-            stack.append([x-1, y])
-        if grid_rows[x][y+1] >= 0 and grid_rows[x][y+1] <= len(grid_rows) and grid_rows[x][y+1] == 0:
-            stack.append([x, y+1])
-        if grid_rows[x][y-1] >= 0 and grid_rows[x][y-1] <= len(grid_rows) and grid_rows[x][y-1] == 0:
-            stack.append([x, y-1])
+        if grid_rows[y][x+1] >= 0 and grid_rows[y][x+1] <= len(grid_rows[1]) and grid_rows[y][x+1] == 0:
+            stack.append([y, x+1])
+        if grid_rows[y][x-1] >= 0 and grid_rows[y][x-1] <= len(grid_rows[1]) and grid_rows[y][x-1] == 0:
+            stack.append([y, x-1])
+        if grid_rows[y+1][x] >= 0 and grid_rows[y+1][x] <= len(grid_rows) and grid_rows[y+1][x] == 0:
+            stack.append([y+1, x])
+        if grid_rows[y-1][x] >= 0 and grid_rows[y-1][x] <= len(grid_rows) and grid_rows[y-1][x] == 0:
+            stack.append([y-1, x])
         if stack_pos + 1 in range(0,len(stack)):
             stack_pos += 1
         else:
             last_visited = visited[len(visited)]
-            stack_pos = visited.index(last_visited)
-
+            stack_pos = visited.index(last_visited + 1)
+            
 
 
 
@@ -149,3 +153,5 @@ for column in range(len(grid_columns)):
 
 t.done()
 
+screen.update()
+t.done()
