@@ -7,6 +7,7 @@ from collections import defaultdict
 from pyngrok import ngrok
 import os
 
+
 # Server Configuration
 MAP_SIZE = 3000
 INITIAL_FOOD_COUNT = 300
