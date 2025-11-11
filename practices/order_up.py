@@ -51,9 +51,9 @@ sides = {
 valid_inps = [1,2,3,4]
 
 while True:
-    action = int(input("1) Menu\n2) add item\n3) remove item\n4) finish order\n"))
+    action = int(input("1) Menu\n2) select item\n3) remove item\n4) finish order\n"))
     if action not in valid_inps:
-        print(f"please input a number from 1-{len(valid_inps)}")
+        print(f"please input a number from 1-4")
         continue
     elif action == 1:
         print("\n---MAIN DISHES---\n")
@@ -67,4 +67,4 @@ while True:
             print(f"{drink}: {drinks[drink]}")
         break
     elif action == 2:
-        
+        current_cat = int(input("\nWhat type of item would you like to add:\n1) Main dish\n2) Sides\n3) Drinks\n"))
