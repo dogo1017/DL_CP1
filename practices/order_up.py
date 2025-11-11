@@ -48,3 +48,23 @@ sides = {
     "Side Rice": 3.25
 }
 
+valid_inps = [1,2,3,4]
+
+while True:
+    action = int(input("1) Menu\n2) add item\n3) remove item\n4) finish order\n"))
+    if action not in valid_inps:
+        print(f"please input a number from 1-{len(valid_inps)}")
+        continue
+    elif action == 1:
+        print("\n---MAIN DISHES---\n")
+        for main in mains:
+            print(f"{main}: {mains[main]}")
+        print("\n---SIDES---\n")
+        for side in sides:
+            print(f"{side}: {sides[side]}")
+        print("\n---DRINKS---")
+        for drink in drinks:
+            print(f"{drink}: {drinks[drink]}")
+        break
+    elif action == 2:
+        
