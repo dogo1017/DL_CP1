@@ -60,20 +60,20 @@ class NetworkManager:
     async def _connect(self):
         print(f"[CLIENT] Attempting to connect to {self.server_url}")
         try:
-            # Add extra headers for ngrok
-            extra_headers = {}
-            if 'ngrok' in self.server_url:
-                extra_headers = {
-                    'User-Agent': 'Python/Slither-Client',
-                    'ngrok-skip-browser-warning': 'true'
-                }
+            ### Add extra headers for ngrok
+            ###extra_headers = {}
+            ###if 'ngrok' in self.server_url:
+            ###    extra_headers = {
+            ###        'User-Agent': 'Python/Slither-Client',
+            ###        'ngrok-skip-browser-warning': 'true'
+            ###    }
             
             async with websockets.connect(
                 self.server_url, 
                 max_size=10**7, 
                 ping_interval=20, 
                 ping_timeout=10,
-                extra_headers=extra_headers
+                ###extra_headers=extra_headers
             ) as websocket:
                 self.websocket = websocket
                 print(f"[CLIENT] WebSocket connected!")
