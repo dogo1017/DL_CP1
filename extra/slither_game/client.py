@@ -7,10 +7,10 @@ import json
 import threading
 import time
 
-# --- Initialize Pygame FIRST ---
+
 pygame.init()
 
-# --- Configuration ---
+
 infoObject = pygame.display.Info()
 SCREEN_WIDTH = infoObject.current_w
 SCREEN_HEIGHT = infoObject.current_h
@@ -27,14 +27,14 @@ GROWTH_SLOWDOWN_FACTOR = 0.5
 BG_COLOR = (20, 20, 20)
 MAP_SIZE = 3000
 
-# --- Setup Display ---
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Slither.io Multiplayer")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
 
-# --- Network Manager ---
+
 class NetworkManager:
     def __init__(self):
         self.websocket = None
@@ -78,7 +78,7 @@ class NetworkManager:
                 self.websocket = websocket
                 print(f"[CLIENT] WebSocket connected!")
                 
-                # Send join message
+
                 join_msg = {
                     'type': 'join',
                     'name': self.player_name,
@@ -87,7 +87,7 @@ class NetworkManager:
                 print(f"[CLIENT] Sending join: {join_msg}")
                 await websocket.send(json.dumps(join_msg))
                 
-                # Receive init message
+
                 print(f"[CLIENT] Waiting for init message...")
                 init_msg = await websocket.recv()
                 init_data = json.loads(init_msg)
@@ -98,7 +98,7 @@ class NetworkManager:
                     self.connected = True
                     print(f"[CLIENT] Connected! Player ID: {self.player_id}")
                 
-                # Listen for game state updates
+
                 message_count = 0
                 async for message in websocket:
                     try:
@@ -107,7 +107,7 @@ class NetworkManager:
                             self.game_state = data
                             self.last_state_time = time.time()
                             message_count += 1
-                            # Debug print every 30 messages (about once per second)
+
                             if message_count % 30 == 0:
                                 print(f"[CLIENT] State received: {len(data.get('players', []))} players, {len(data.get('foods', []))} food")
                     except json.JSONDecodeError:
@@ -137,10 +137,10 @@ class NetworkManager:
                     self.websocket.send(json.dumps(msg)),
                     self.loop
                 )
-                # Don't wait for the result to avoid blocking
+
                 future.result(timeout=0.01)
             except Exception as e:
-                # Silently ignore send errors to avoid spam
+
                 pass
     
     def send_eat(self, food_id):
@@ -172,7 +172,7 @@ class NetworkManager:
             except Exception as e:
                 print(f"[CLIENT] Error sending respawn: {e}")
 
-# --- Classes ---
+
 class Player:
     def __init__(self, x, y, color, is_local=False):
         self.pos = pygame.math.Vector2(x, y)
