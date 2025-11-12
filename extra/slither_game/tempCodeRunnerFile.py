@@ -1,1 +1,1 @@
-c
+cd /workspaces/DL_CP1/extra/slither_game pygbag client_pygbag_ws.py

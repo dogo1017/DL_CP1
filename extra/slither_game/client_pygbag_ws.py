@@ -5,8 +5,8 @@ Pygbag-compatible Slither.io client with WebSocket support.
 
 Usage (browser):
   pygbag client_pygbag_ws.py
-Open the address printed by pygbag (usually http://localhost:8000) Use cd /workspaces/DL_CP1/extra/slither_game
-pygbag client_pygbag_ws.py for browser
+Open the address printed by pygbag (usually http://localhost:8000) 
+Use cd /workspaces/DL_CP1/extra/slither_game pygbag client_pygbag_ws.py for browser
 
 This keeps the original game UI and sends/receives a minimal protocol:
 - send: {'type':'join','name':...} -> server returns {'player_id': id}
