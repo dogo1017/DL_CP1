@@ -50,8 +50,10 @@ sides = {
 
 valid_inps = [1,2,3,4]
 
+orders = {}
+
 while True:
-    action = int(input("1) Menu\n2) select item\n3) remove item\n4) finish order\n"))
+    action = int(input("1) Menu\n2) Select Item\n3) Remove Item\n4) View Order\n5) Finalize Order\n"))
     if action not in valid_inps:
         print(f"please input a number from 1-4")
         continue
@@ -67,4 +69,71 @@ while True:
             print(f"{drink}: {drinks[drink]}")
         break
     elif action == 2:
-        current_cat = int(input("\nWhat type of item would you like to add:\n1) Main dish\n2) Sides\n3) Drinks\n"))
+        current_cat = 4
+        while current_cat not in range(3):
+            current_cat = int(input("\nWhat type of item would you like to add:\n1) Main dish\n2) Sides\n3) Drinks\n"))
+        if current_cat == 1:
+            cur_it = 0
+            for main in mains:
+                cur_it +=1
+                print(f"{cur_it}){main}: {mains[main]}")
+            while True:
+                new_item = int(input("\nWhich item would you like add to order: "))
+                if new_item in range(cur_it):
+                    break
+                else:
+                    print(f"please type a valid input (1-{cur_it})")
+            new_key = mains[new_item]
+            orders[new_key] = mains[new_item]
+        if current_cat == 2:
+            cur_it = 0
+            for side in sides:
+                cur_it +=1
+                print(f"{cur_it}){side}: {sides[side]}")
+            while True:
+                new_item = int(input("\nWhich item would you like add to order: "))
+                if new_item in range(cur_it):
+                    break
+                else:
+                    print(f"please type a valid input (1-{cur_it})")
+            new_key = sides[new_item]
+            orders[new_key] = sides[new_item]
+        if current_cat == 3:
+            cur_it = 0
+            for drink in drinks:
+                cur_it +=1
+                print(f"{cur_it}){drink}: {drinks[drink]}")
+            while True:
+                new_item = int(input("\nWhich item would you like add to order: "))
+                if new_item in range(cur_it):
+                    break
+                else:
+                    print(f"please type a valid input (1-{cur_it})")
+            new_key = drinks[new_item]
+            orders[new_key] = drinks[new_item]
+
+        elif action == 3:
+            while True:
+                cur_it = 0
+                for order in orders:
+                    cur_it +=1
+                    print(f"{cur_it}){order}: {orders[order]}")
+                item_remove = int(input("Which item would you like to remove: "))
+                if item_remove in range(cur_it):
+                    break
+                else:
+                    print("Please type a valid input")
+            del orders[item_remove]
+    elif action == 4:
+        for order in orders:
+                    cur_it +=1
+                    print(f"{cur_it}){order}: {orders[order]}")
+    
+    elif action == 5:
+        sum = 0
+        for order in orders:
+                    sum += 1
+                    cur_it +=1
+                    print(f"{cur_it}){order}: {orders[order]}")
+
+        print(f"Total sum: {sum}")
