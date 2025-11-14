@@ -6,15 +6,15 @@ Pygbag-compatible Slither.io client with WebSocket support.
 Usage (browser):
   pygbag client_pygbag_ws.py
 Open the address printed by pygbag (usually http://localhost:8000) 
-Use cd /workspaces/DL_CP1/extra/slither_game pygbag client_pygbag_ws.py for browser
+Use: cd /workspaces/DL_CP1/extra/slither_game && pygbag client_pygbag_ws.py
 
-This keeps the original game UI and sends/receives a minimal protocol:
-- send: {'type':'join','name':...} -> server returns {'player_id': id}
-- server sends periodic {'type':'state','players': [...], 'foods': [...]} updates
-- client sends {'type':'update', ...} when local player moves
-- client sends {'type':'eat','food_id': id} when eating
-
-If server isn't reachable within 10s it falls back to local simulated mode so you can still test UI.
+Features:
+- Full multiplayer support with WebSocket
+- Color picker
+- Death and respawn system
+- Leaderboard
+- Connection status indicator
+- Smooth snake movement
 """
 
 import pygame
@@ -27,10 +27,12 @@ import time
 # Try to import browser js WebSocket
 BROWSER = False
 try:
-    from js import WebSocket  # available in pyodide/pygbag
+    from js import WebSocket
     BROWSER = True
+    print("[CLIENT] Running in browser mode (pygbag)")
 except Exception:
     BROWSER = False
+    print("[CLIENT] Running in desktop mode")
 
 # Desktop fallback
 try:
@@ -52,8 +54,10 @@ BOOST_COST_RATE = 100
 MIN_FOOD_SIZE = 5
 MAX_FOOD_SIZE = 15
 INITIAL_PLAYER_RADIUS = 10
+INITIAL_LENGTH = 150
+MAX_LENGTH = 1500
+GROWTH_SLOWDOWN_FACTOR = 0.5
 BG_COLOR = (20, 20, 20)
-PLAYER_COLOR = (0, 200, 0)
 MAP_SIZE = 3000
 
 # --- Setup Display ---
@@ -62,6 +66,7 @@ pygame.display.set_caption("Slither.io Multiplayer (pygbag+ws)")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
+title_font = pygame.font.Font(None, 72)
 
 # --- Network Manager ---
 class NetworkManager:
@@ -69,96 +74,132 @@ class NetworkManager:
         self.ws = None
         self.player_id = None
         self.connected = False
-        self.game_state = {'players': [], 'foods': []}
+        self.game_state = {'players': [], 'foods': [], 'timestamp': 0}
         self.loop = None
         self._browser = BROWSER
+        self.last_state_time = 0
 
-    def start(self, server_url, player_name):
+    def start(self, server_url, player_name, player_color):
         """Start connection. Non-blocking: returns immediately and updates self.connected when ready."""
+        self.player_name = player_name
+        self.player_color = player_color
+        print(f"[CLIENT] Attempting to connect to {server_url}")
+        
         if self._browser:
-            self._start_browser(server_url, player_name)
+            self._start_browser(server_url, player_name, player_color)
         else:
             # desktop fallback uses an asyncio task
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
-            self.loop.create_task(self._connect_desktop(server_url, player_name))
-            # run loop in background via asyncio.ensure_future in new thread would be complex; keep non-blocking
-            # We'll run the loop in a background thread so the pygame main thread isn't blocked.
+            self.loop.create_task(self._connect_desktop(server_url, player_name, player_color))
+            # Run loop in background thread
             import threading
             t = threading.Thread(target=self.loop.run_forever, daemon=True)
             t.start()
 
     # Browser WebSocket implementation
-    def _start_browser(self, server_url, player_name):
+    def _start_browser(self, server_url, player_name, player_color):
         try:
+            # Create WebSocket - pygbag/pyodide style
             ws = WebSocket.new(server_url)
-        except Exception:
-            # pyodide's WebSocket may be exposed either as WebSocket or WebSocket.new; try alternate
-            ws = WebSocket(server_url)
+        except:
+            try:
+                ws = WebSocket(server_url)
+            except Exception as e:
+                print(f'[CLIENT] Failed to create WebSocket: {e}')
+                return
+        
         self.ws = ws
+        print("[CLIENT] WebSocket object created")
 
         def onopen(evt):
+            print("[CLIENT] WebSocket opened!")
             try:
-                join_msg = json.dumps({'type': 'join', 'name': player_name})
+                join_msg = json.dumps({
+                    'type': 'join',
+                    'name': player_name,
+                    'color': player_color
+                })
                 ws.send(join_msg)
+                print(f"[CLIENT] Sent join message: {join_msg}")
             except Exception as e:
-                print('ws send error onopen', e)
+                print(f'[CLIENT] Error in onopen: {e}')
 
         def onmessage(evt):
             try:
-                data_text = str(evt.data)
-                data = json.loads(data_text)
+                # In browser, evt.data is already a string
+                data = json.loads(evt.data)
+                
                 if data.get('type') == 'init':
                     self.player_id = data.get('player_id')
                     self.connected = True
-                    print('Connected (browser). player_id=', self.player_id)
+                    print(f'[CLIENT] Connected! Player ID: {self.player_id}')
                 elif data.get('type') == 'state':
                     self.game_state = data
+                    self.last_state_time = time.time()
             except Exception as e:
-                print('ws onmessage error', e)
+                print(f'[CLIENT] Error in onmessage: {e}')
 
         def onclose(evt):
             self.connected = False
-            print('WebSocket closed')
+            print('[CLIENT] WebSocket closed')
 
         def onerror(evt):
-            print('WebSocket error', evt)
+            print(f'[CLIENT] WebSocket error: {evt}')
 
-        # attach handlers
+        # Attach handlers - try both methods
         try:
             ws.onopen = onopen
             ws.onmessage = onmessage
             ws.onclose = onclose
             ws.onerror = onerror
-        except Exception:
-            # some pyodide/pygbag bridges expose addEventListener
+            print("[CLIENT] Event handlers attached (direct)")
+        except:
             try:
                 ws.addEventListener('open', onopen)
                 ws.addEventListener('message', onmessage)
                 ws.addEventListener('close', onclose)
                 ws.addEventListener('error', onerror)
+                print("[CLIENT] Event handlers attached (addEventListener)")
             except Exception as e:
-                print('Failed to attach WS handlers', e)
+                print(f'[CLIENT] Failed to attach handlers: {e}')
 
-    async def _connect_desktop(self, server_url, player_name):
+    async def _connect_desktop(self, server_url, player_name, player_color):
         if websockets is None:
-            print('websockets package missing on desktop; network disabled')
+            print('[CLIENT] websockets package missing; network disabled')
             return
         try:
-            async with websockets.connect(server_url, max_size=10**7) as websocket:
+            async with websockets.connect(server_url, max_size=10**7, ping_interval=20, ping_timeout=10) as websocket:
                 self.ws = websocket
-                await websocket.send(json.dumps({'type': 'join', 'name': player_name}))
+                print("[CLIENT] WebSocket connected (desktop)")
+                
+                await websocket.send(json.dumps({
+                    'type': 'join',
+                    'name': player_name,
+                    'color': player_color
+                }))
+                print(f"[CLIENT] Sent join message")
+                
                 init_msg = await websocket.recv()
                 init_data = json.loads(init_msg)
-                self.player_id = init_data.get('player_id')
-                self.connected = True
-                print('Connected (desktop). player_id=', self.player_id)
+                print(f"[CLIENT] Received init: {init_data}")
+                
+                if init_data['type'] == 'init':
+                    self.player_id = init_data.get('player_id')
+                    self.connected = True
+                    print(f'[CLIENT] Connected! Player ID: {self.player_id}')
+                
                 async for message in websocket:
-                    data = json.loads(message)
-                    if data.get('type') == 'state':
-                        self.game_state = data
+                    try:
+                        data = json.loads(message)
+                        if data.get('type') == 'state':
+                            self.game_state = data
+                            self.last_state_time = time.time()
+                    except json.JSONDecodeError:
+                        print(f"[CLIENT] Invalid JSON received")
+                        
         except Exception as e:
-            print('Connection error (desktop):', e)
+            print(f'[CLIENT] Connection error (desktop): {e}')
             self.connected = False
 
     def send_update(self, player_data):
@@ -173,15 +214,15 @@ class NetworkManager:
                 'radius': player_data['radius'],
                 'length': player_data['length'],
                 'score': player_data['score'],
+                'alive': player_data['alive'],
                 'shed_food': player_data.get('shed_food')
             })
             if self._browser:
                 self.ws.send(payload)
             else:
-                # desktop: schedule send on event loop
                 asyncio.run_coroutine_threadsafe(self.ws.send(payload), self.loop)
         except Exception as e:
-            print('send_update error', e)
+            pass  # Silently fail to avoid spam
 
     def send_eat(self, food_id):
         if not self.ws or not self.connected:
@@ -193,39 +234,74 @@ class NetworkManager:
             else:
                 asyncio.run_coroutine_threadsafe(self.ws.send(payload), self.loop)
         except Exception as e:
-            print('send_eat error', e)
+            pass
+
+    def send_respawn(self, color):
+        if not self.ws or not self.connected:
+            return
+        try:
+            payload = json.dumps({'type': 'respawn', 'color': color})
+            if self._browser:
+                self.ws.send(payload)
+            else:
+                asyncio.run_coroutine_threadsafe(self.ws.send(payload), self.loop)
+            print(f"[CLIENT] Sent respawn request")
+        except Exception as e:
+            print(f"[CLIENT] Error sending respawn: {e}")
 
 # --- Classes (player/food) ---
 class Player:
-    def __init__(self, x, y, is_local=False):
+    def __init__(self, x, y, color, is_local=False):
         self.pos = pygame.math.Vector2(x, y)
         self.radius = INITIAL_PLAYER_RADIUS
         self.score = 0
-        self.color = PLAYER_COLOR if is_local else (random.randint(50,255), random.randint(50,255), random.randint(50,255))
-        self.length = 150
+        self.color = color
+        self.length = INITIAL_LENGTH
         self.base_speed = PLAYER_BASE_SPEED
         self.speed = self.base_speed
         self.positions = [self.pos.copy()] * int(self.length)
         self.boosting = False
         self.is_local = is_local
         self.name = ""
+        self.alive = True
 
     def update(self, dt):
-        if not self.is_local:
+        if not self.is_local or not self.alive:
             return None
+        
+        # Speed calculation with size penalty
         speed_multiplier = BOOST_SPEED_MULTIPLIER if self.boosting else 1.0
-        size_multiplier = (INITIAL_PLAYER_RADIUS / self.radius)
-        self.speed = max(100, self.base_speed * size_multiplier * speed_multiplier)
+        size_multiplier = max(0.3, (INITIAL_PLAYER_RADIUS / self.radius) ** 0.8)
+        self.speed = self.base_speed * size_multiplier * speed_multiplier
+        
         mouse_x, mouse_y = pygame.mouse.get_pos()
         target = pygame.math.Vector2(mouse_x - SCREEN_WIDTH // 2, mouse_y - SCREEN_HEIGHT // 2)
+        
         if target.length_squared() > 0:
             direction = target.normalize()
             self.pos += direction * self.speed * dt
+        
         self.pos.x = max(self.radius, min(MAP_SIZE - self.radius, self.pos.x))
         self.pos.y = max(self.radius, min(MAP_SIZE - self.radius, self.pos.y))
+        
         shed_food_item = None
+        if self.boosting and self.length > 50:
+            mass_lost = BOOST_COST_RATE * dt
+            self.length -= mass_lost
+            self.score = max(0, self.score - mass_lost * 0.1)
+            if len(self.positions) > 10:
+                shed_pos = self.positions[-10]
+                shed_food_item = {'x': shed_pos.x, 'y': shed_pos.y}
+        
+        # Update positions - smooth body movement
         self.positions.insert(0, self.pos.copy())
-        self.positions = self.positions[:int(self.length)]
+        target_length = int(self.length)
+        if len(self.positions) > target_length:
+            self.positions = self.positions[:target_length]
+        elif len(self.positions) < target_length:
+            while len(self.positions) < target_length:
+                self.positions.append(self.positions[-1].copy())
+        
         self.update_radius()
         return shed_food_item
 
@@ -233,67 +309,138 @@ class Player:
         self.radius = INITIAL_PLAYER_RADIUS + math.sqrt(self.length / 10.0)
 
     def grow(self, mass_gained):
-        self.length += mass_gained
-        self.score += mass_gained
+        effective_gain = mass_gained * GROWTH_SLOWDOWN_FACTOR
+        self.length = min(MAX_LENGTH, self.length + effective_gain)
+        self.score += effective_gain
         self.update_radius()
 
     def draw(self, surface, camera_x, camera_y):
         offset_x = -camera_x + SCREEN_WIDTH // 2
         offset_y = -camera_y + SCREEN_HEIGHT // 2
+        
+        # Draw body segments
         for i, pos in enumerate(self.positions):
             taper_factor = 1 - (i / len(self.positions)) * 0.7
             segment_radius = max(1, self.radius * taper_factor)
             screen_x = pos.x + offset_x
             screen_y = pos.y + offset_y
-            pygame.draw.circle(surface, self.color, (int(screen_x), int(screen_y)), int(segment_radius))
-        if self.name:
-            name_surface = small_font.render(self.name, True, (255,255,255))
-            surface.blit(name_surface, (self.pos.x + offset_x - name_surface.get_width()//2, self.pos.y + offset_y - self.radius - 20))
+            
+            if -segment_radius < screen_x < SCREEN_WIDTH + segment_radius and \
+               -segment_radius < screen_y < SCREEN_HEIGHT + segment_radius:
+                pygame.draw.circle(surface, self.color, (int(screen_x), int(screen_y)), int(segment_radius))
+        
+        # Draw name above player head
+        if self.name and self.alive:
+            name_surface = small_font.render(self.name, True, (255, 255, 255))
+            name_x = self.pos.x + offset_x - name_surface.get_width() // 2
+            name_y = self.pos.y + offset_y - self.radius - 20
+            surface.blit(name_surface, (name_x, name_y))
 
 class Food:
-    def __init__(self, x, y, radius, value, color, fid):
-        self.pos = pygame.math.Vector2(x, y)
-        self.radius = radius
-        self.value = value
-        self.color = color
-        self.id = fid
+    def __init__(self, food_data):
+        self.pos = pygame.math.Vector2(food_data['x'], food_data['y'])
+        self.radius = food_data['radius']
+        self.value = food_data['value']
+        self.color = tuple(food_data['color'])
+        self.id = food_data['id']
+    
     def draw(self, surface, camera_x, camera_y):
         screen_x = self.pos.x - camera_x + SCREEN_WIDTH // 2
         screen_y = self.pos.y - camera_y + SCREEN_HEIGHT // 2
-        if -self.radius < screen_x < SCREEN_WIDTH + self.radius and -self.radius < screen_y < SCREEN_HEIGHT + self.radius:
+        if -self.radius < screen_x < SCREEN_WIDTH + self.radius and \
+           -self.radius < screen_y < SCREEN_HEIGHT + self.radius:
             pygame.draw.circle(surface, self.color, (int(screen_x), int(screen_y)), int(self.radius))
 
-# --- UI / Connection screen (same as original) ---
+# --- Color Picker Screen ---
+def show_color_picker():
+    colors = [
+        (255, 0, 0), (0, 255, 0), (0, 0, 255),
+        (255, 255, 0), (255, 0, 255), (0, 255, 255),
+        (255, 128, 0), (128, 0, 255), (0, 255, 128),
+        (255, 192, 203), (128, 128, 128), (255, 255, 255)
+    ]
+    
+    selected_color = colors[1]  # Default to green
+    color_boxes = []
+    
+    start_x = SCREEN_WIDTH // 2 - 300
+    start_y = SCREEN_HEIGHT // 2 - 50
+    for i, color in enumerate(colors):
+        x = start_x + (i % 6) * 100
+        y = start_y + (i // 6) * 100
+        color_boxes.append((pygame.Rect(x, y, 80, 80), color))
+    
+    while True:
+        screen.fill(BG_COLOR)
+        
+        title = font.render('Choose Your Color', True, (255, 255, 255))
+        screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, start_y - 100))
+        
+        for box, color in color_boxes:
+            pygame.draw.rect(screen, color, box)
+            if color == selected_color:
+                pygame.draw.rect(screen, (255, 255, 255), box, 5)
+            else:
+                pygame.draw.rect(screen, (100, 100, 100), box, 2)
+        
+        inst = small_font.render('Click a color, then press ENTER to continue', True, (200, 200, 200))
+        screen.blit(inst, (SCREEN_WIDTH // 2 - inst.get_width() // 2, start_y + 230))
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return None
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                for box, color in color_boxes:
+                    if box.collidepoint(mouse_pos):
+                        selected_color = color
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return list(selected_color)
+                if event.key == pygame.K_ESCAPE:
+                    return None
+
+# --- Connection Screen ---
 def show_connection_screen():
     input_box = pygame.Rect(SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2 - 100, 600, 40)
     name_box = pygame.Rect(SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2 - 30, 600, 40)
     color_inactive = pygame.Color('lightskyblue3')
     color_active = pygame.Color('dodgerblue2')
+    
     server_text = ''
     name_text = ''
     active_box = 'server'
-    title_font = pygame.font.Font(None, 72)
+    
     while True:
         screen.fill(BG_COLOR)
-        title = title_font.render('SLITHER.IO MULTIPLAYER', True, (0,255,0))
-        screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width()//2, 100))
-        inst1 = font.render('Enter Server Address', True, (255,255,255))
-        inst2 = small_font.render('Example: abc123.ngrok-free.app', True, (200,200,200))
-        inst3 = small_font.render('Press TAB to switch fields, ENTER to connect, ESC to quit', True, (150,150,150))
-        screen.blit(inst1, (SCREEN_WIDTH//2 - inst1.get_width()//2, SCREEN_HEIGHT//2 - 180))
-        screen.blit(inst2, (SCREEN_WIDTH//2 - inst2.get_width()//2, SCREEN_HEIGHT//2 - 140))
-        screen.blit(inst3, (SCREEN_WIDTH//2 - inst3.get_width()//2, SCREEN_HEIGHT - 100))
-        server_label = small_font.render('Server:', True, (255,255,255))
+        
+        title = title_font.render('SLITHER.IO MULTIPLAYER', True, (0, 255, 0))
+        screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 100))
+        
+        inst1 = font.render('Enter Server Address', True, (255, 255, 255))
+        inst2 = small_font.render('Example: abc123.ngrok-free.app', True, (200, 200, 200))
+        inst3 = small_font.render('Press TAB to switch fields, ENTER to connect, ESC to quit', True, (150, 150, 150))
+        
+        screen.blit(inst1, (SCREEN_WIDTH // 2 - inst1.get_width() // 2, SCREEN_HEIGHT // 2 - 180))
+        screen.blit(inst2, (SCREEN_WIDTH // 2 - inst2.get_width() // 2, SCREEN_HEIGHT // 2 - 140))
+        screen.blit(inst3, (SCREEN_WIDTH // 2 - inst3.get_width() // 2, SCREEN_HEIGHT - 100))
+        
+        server_label = small_font.render('Server:', True, (255, 255, 255))
         screen.blit(server_label, (input_box.x, input_box.y - 25))
-        pygame.draw.rect(screen, color_active if active_box=='server' else color_inactive, input_box, 2)
-        server_surface = font.render(server_text, True, (255,255,255))
+        pygame.draw.rect(screen, color_active if active_box == 'server' else color_inactive, input_box, 2)
+        server_surface = font.render(server_text, True, (255, 255, 255))
         screen.blit(server_surface, (input_box.x + 5, input_box.y + 5))
-        name_label = small_font.render('Your Name:', True, (255,255,255))
+        
+        name_label = small_font.render('Your Name:', True, (255, 255, 255))
         screen.blit(name_label, (name_box.x, name_box.y - 25))
-        pygame.draw.rect(screen, color_active if active_box=='name' else color_inactive, name_box, 2)
-        name_surface = font.render(name_text, True, (255,255,255))
+        pygame.draw.rect(screen, color_active if active_box == 'name' else color_inactive, name_box, 2)
+        name_surface = font.render(name_text, True, (255, 255, 255))
         screen.blit(name_surface, (name_box.x + 5, name_box.y + 5))
+        
         pygame.display.flip()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return None, None
@@ -301,171 +448,258 @@ def show_connection_screen():
                 if event.key == pygame.K_ESCAPE:
                     return None, None
                 elif event.key == pygame.K_TAB:
-                    active_box = 'name' if active_box=='server' else 'server'
+                    active_box = 'name' if active_box == 'server' else 'server'
                 elif event.key == pygame.K_RETURN:
                     if server_text and name_text:
                         return server_text, name_text
                 elif event.key == pygame.K_BACKSPACE:
-                    if active_box=='server':
+                    if active_box == 'server':
                         server_text = server_text[:-1]
                     else:
                         name_text = name_text[:-1]
                 else:
-                    if active_box=='server' and len(server_text)<100:
+                    if active_box == 'server' and len(server_text) < 100:
                         server_text += event.unicode
-                    elif active_box=='name' and len(name_text)<20:
+                    elif active_box == 'name' and len(name_text) < 20:
                         name_text += event.unicode
 
-# --- Main game (uses network if available) ---
-def main():
-    server_addr, player_name = show_connection_screen()
-    if not server_addr:
-        pygame.quit(); return
-
-    # If server string appears to be ngrok/playit use wss, else ws
-    if '.ngrok' in server_addr or '.playit' in server_addr:
-        server_url = f"wss://{server_addr}"
-    elif server_addr.startswith('ws://') or server_addr.startswith('wss://'):
-        server_url = server_addr
-    else:
-        server_url = f"ws://{server_addr}"
-
-    network = NetworkManager()
-    network.start(server_url, player_name)
-
-    # Wait up to 10s for connection, otherwise fall back to simulation
-    wait_start = time.time()
-    while not network.connected and time.time() - wait_start < 10:
-        # show connecting screen and allow cancel
+def show_death_screen(score, respawn_time):
+    """Show death screen with countdown"""
+    while respawn_time > 0:
         screen.fill(BG_COLOR)
-        elapsed = int(time.time() - wait_start)
-        msg = font.render(f'Connecting to server... ({elapsed}s)', True, (255,255,255))
-        screen.blit(msg, (SCREEN_WIDTH//2 - msg.get_width()//2, SCREEN_HEIGHT//2))
-        inst = small_font.render('Press ESC to cancel and run in local test mode', True, (200,200,200))
-        screen.blit(inst, (SCREEN_WIDTH//2 - inst.get_width()//2, SCREEN_HEIGHT//2 + 40))
+        
+        death_text = font.render('YOU DIED!', True, (255, 0, 0))
+        score_text = font.render(f'Final Score: {int(score)}', True, (255, 255, 255))
+        respawn_text = small_font.render(f'Respawning in {int(respawn_time)} seconds...', True, (200, 200, 200))
+        
+        screen.blit(death_text, (SCREEN_WIDTH // 2 - death_text.get_width() // 2, SCREEN_HEIGHT // 2 - 100))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2 - 30))
+        screen.blit(respawn_text, (SCREEN_WIDTH // 2 - respawn_text.get_width() // 2, SCREEN_HEIGHT // 2 + 30))
+        
         pygame.display.flip()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit(); return
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                network = None
-                break
-        time.sleep(0.1)
+                return False
+        
+        pygame.time.wait(100)
+        respawn_time -= 0.1
+    
+    return True
 
-    # Initialize players & foods
-    local_player = Player(MAP_SIZE//2, MAP_SIZE//2, is_local=True)
+# --- Main game ---
+async def main():
+    # Connection screen
+    server_address, player_name = show_connection_screen()
+    if not server_address:
+        pygame.quit()
+        return
+    
+    # Color picker
+    player_color = show_color_picker()
+    if not player_color:
+        pygame.quit()
+        return
+    
+    print(f"[CLIENT] Selected color: {player_color}")
+    
+    # Setup network
+    network = NetworkManager()
+    if '.ngrok' in server_address or '.playit' in server_address:
+        server_url = f"wss://{server_address}"
+    elif server_address.startswith('ws://') or server_address.startswith('wss://'):
+        server_url = server_address
+    else:
+        server_url = f"ws://{server_address}"
+    
+    print(f"[CLIENT] Starting network connection to {server_url}")
+    network.start(server_url, player_name, player_color)
+    
+    # Wait for connection (up to 15 seconds)
+    waiting_start = time.time()
+    while not network.connected:
+        screen.fill(BG_COLOR)
+        elapsed = int(time.time() - waiting_start)
+        msg = font.render(f'Connecting to server... ({elapsed}s)', True, (255, 255, 255))
+        screen.blit(msg, (SCREEN_WIDTH // 2 - msg.get_width() // 2, SCREEN_HEIGHT // 2))
+        inst = small_font.render('Press ESC to cancel', True, (200, 200, 200))
+        screen.blit(inst, (SCREEN_WIDTH // 2 - inst.get_width() // 2, SCREEN_HEIGHT // 2 + 40))
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                pygame.quit()
+                return
+        
+        if elapsed > 15:
+            screen.fill(BG_COLOR)
+            msg = font.render('Connection failed. Check server address.', True, (255, 0, 0))
+            screen.blit(msg, (SCREEN_WIDTH // 2 - msg.get_width() // 2, SCREEN_HEIGHT // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            return
+        
+        pygame.time.wait(100)
+    
+    print(f"[CLIENT] Connected successfully! Player ID: {network.player_id}")
+    
+    # Initialize local player
+    local_player = Player(MAP_SIZE // 2, MAP_SIZE // 2, player_color, is_local=True)
     local_player.name = player_name
     other_players = {}
     foods = []
-
-    # If connected, we'll use network.game_state; otherwise simulate
-    simulated = (network is None) or (not network.connected)
-    if simulated:
-        # spawn bots & foods for local testing
-        for i in range(3):
-            p = Player(random.randint(100, MAP_SIZE-100), random.randint(100, MAP_SIZE-100))
-            p.name = f'Bot{i+1}'
-            other_players[i] = p
-        for fid in range(200):
-            foods.append(Food(random.randint(50, MAP_SIZE-50), random.randint(50, MAP_SIZE-50), random.randint(MIN_FOOD_SIZE, MAX_FOOD_SIZE), random.randint(1,5), (random.randint(50,255), random.randint(50,255), random.randint(50,255)), fid))
-
+    
+    # Main game loop
     running = True
+    last_debug_time = time.time()
+    
     while running:
         dt = clock.tick(60) / 1000.0
+        
+        # Debug output every 2 seconds
+        if time.time() - last_debug_time > 2.0:
+            game_state = network.game_state.copy()
+            print(f"[CLIENT] Players: {len(game_state.get('players', []))}, Foods: {len(game_state.get('foods', []))}")
+            last_debug_time = time.time()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE and local_player.alive:
                     local_player.boosting = True
                 if event.key == pygame.K_ESCAPE:
                     running = False
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     local_player.boosting = False
-
+        
         # Update local player
-        shed_food = local_player.update(dt)
-
-        # If connected, send update and use server state
-        if network and network.connected:
-            # send local update
-            try:
-                network.send_update({
-                    'x': local_player.pos.x,
-                    'y': local_player.pos.y,
-                    'positions': [[p.x, p.y] for p in local_player.positions],
-                    'radius': local_player.radius,
-                    'length': local_player.length,
-                    'score': local_player.score,
-                    'shed_food': shed_food
-                })
-            except Exception:
-                pass
-
-            # apply server state
-            gs = network.game_state
-            foods = [Food(f['x'], f['y'], f['radius'], f['value'], tuple(f['color']), f['id']) for f in gs.get('foods', [])]
-            other_players = {}
-            for pdata in gs.get('players', []):
-                if pdata.get('id') != network.player_id:
-                    p = Player(pdata['x'], pdata['y'])
-                    p.pos.x = pdata['x']
-                    p.pos.y = pdata['y']
-                    p.radius = pdata['radius']
-                    p.score = pdata['score']
-                    p.color = tuple(pdata['color'])
-                    p.name = pdata['name']
-                    p.positions = [pygame.math.Vector2(xx, yy) for xx, yy in pdata.get('positions', [])]
-                    other_players[pdata['id']] = p
-        else:
-            # local simulation
-            local_player.update(dt)
-            for p in other_players.values():
-                p.update(dt)
-
-            # food collisions (local)
+        if local_player.alive:
+            shed_food = local_player.update(dt)
+            
+            # Send update to server
+            network.send_update({
+                'x': local_player.pos.x,
+                'y': local_player.pos.y,
+                'positions': [[p.x, p.y] for p in local_player.positions],
+                'radius': local_player.radius,
+                'length': local_player.length,
+                'score': local_player.score,
+                'alive': local_player.alive,
+                'shed_food': shed_food
+            })
+        
+        # Get game state from server
+        game_state = network.game_state.copy()
+        
+        # Check if local player died on server
+        for player_data in game_state.get('players', []):
+            if player_data['id'] == network.player_id and not player_data['alive'] and local_player.alive:
+                local_player.alive = False
+                if show_death_screen(local_player.score, 5.0):
+                    new_color = show_color_picker()
+                    if new_color:
+                        network.send_respawn(new_color)
+                        pygame.time.wait(500)
+                        local_player = Player(MAP_SIZE // 2, MAP_SIZE // 2, new_color, is_local=True)
+                        local_player.name = player_name
+                else:
+                    running = False
+        
+        # Update foods from server
+        foods = [Food(f) for f in game_state.get('foods', [])]
+        
+        # Check food collisions
+        if local_player.alive:
             for food in foods[:]:
-                if local_player.pos.distance_to(food.pos) < local_player.radius + food.radius:
+                distance = local_player.pos.distance_to(food.pos)
+                if distance < local_player.radius + food.radius:
                     local_player.grow(food.value)
-                    foods.remove(food)
-                    foods.append(Food(random.randint(50, MAP_SIZE-50), random.randint(50, MAP_SIZE-50), random.randint(MIN_FOOD_SIZE, MAX_FOOD_SIZE), random.randint(1,5), (random.randint(50,255), random.randint(50,255), random.randint(50,255)), random.randint(1000,9999)))
-
-        # Drawing
+                    network.send_eat(food.id)
+        
+        # Update other players from server
+        other_players.clear()
+        for player_data in game_state.get('players', []):
+            if player_data['id'] != network.player_id and player_data.get('alive', True):
+                other = Player(player_data['x'], player_data['y'], tuple(player_data['color']))
+                other.pos.x = player_data['x']
+                other.pos.y = player_data['y']
+                other.radius = player_data['radius']
+                other.score = player_data['score']
+                other.name = player_data['name']
+                other.alive = player_data.get('alive', True)
+                if player_data.get('positions'):
+                    other.positions = [pygame.math.Vector2(p[0], p[1]) for p in player_data['positions']]
+                else:
+                    other.positions = [other.pos.copy()] * int(player_data.get('length', 150))
+                other_players[player_data['id']] = other
+        
+        # Camera
         camera_x = local_player.pos.x
         camera_y = local_player.pos.y
+        
+        # Drawing
         screen.fill(BG_COLOR)
+        
+        # Draw map boundary
         map_left = -camera_x + SCREEN_WIDTH // 2
         map_top = -camera_y + SCREEN_HEIGHT // 2
-        pygame.draw.rect(screen, (100,100,100), (map_left, map_top, MAP_SIZE, MAP_SIZE), 5)
+        pygame.draw.rect(screen, (100, 100, 100), (map_left, map_top, MAP_SIZE, MAP_SIZE), 5)
+        
+        # Draw grid
         for x in range(0, MAP_SIZE, 100):
             start_x = x - camera_x + SCREEN_WIDTH // 2
-            pygame.draw.line(screen, (40,40,40), (start_x, map_top), (start_x, map_top + MAP_SIZE), 1)
+            pygame.draw.line(screen, (40, 40, 40), (start_x, map_top), (start_x, map_top + MAP_SIZE), 1)
         for y in range(0, MAP_SIZE, 100):
             start_y = y - camera_y + SCREEN_HEIGHT // 2
-            pygame.draw.line(screen, (40,40,40), (map_left, start_y), (map_left + MAP_SIZE, start_y), 1)
-
+            pygame.draw.line(screen, (40, 40, 40), (map_left, start_y), (map_left + MAP_SIZE, start_y), 1)
+        
+        # Draw food
         for food in foods:
             food.draw(screen, camera_x, camera_y)
+        
+        # Draw other players
         for other in other_players.values():
             other.draw(screen, camera_x, camera_y)
+        
+        # Draw local player
         local_player.draw(screen, camera_x, camera_y)
-
-        score_text = font.render(f'Score: {int(local_player.score)}', True, (255,255,255))
-        screen.blit(score_text, (10,10))
-        players_text = small_font.render(f'Players: {len(other_players) + 1}', True, (255,255,255))
-        screen.blit(players_text, (10,50))
-
-        all_players_scores = [(local_player.name, int(local_player.score))] + [(p.name, int(p.score)) for p in other_players.values()]
+        
+        # Draw HUD
+        score_text = font.render(f'Score: {int(local_player.score)}', True, (255, 255, 255))
+        screen.blit(score_text, (10, 10))
+        
+        total_players = len(other_players) + (1 if local_player.alive else 0)
+        players_text = small_font.render(f'Players: {total_players}', True, (255, 255, 255))
+        screen.blit(players_text, (10, 50))
+        
+        length_text = small_font.render(f'Length: {int(local_player.length)}/{MAX_LENGTH}', True, (255, 255, 255))
+        screen.blit(length_text, (10, 80))
+        
+        # Connection indicator
+        time_since_state = time.time() - network.last_state_time
+        if time_since_state > 2:
+            conn_text = small_font.render('Connection Lost!', True, (255, 0, 0))
+        else:
+            conn_text = small_font.render('Connected', True, (0, 255, 0))
+        screen.blit(conn_text, (SCREEN_WIDTH - 150, 10))
+        
+        # Draw leaderboard
+        all_players_scores = [(local_player.name, int(local_player.score))] + \
+                            [(p.name, int(p.score)) for p in other_players.values()]
         all_players_scores.sort(key=lambda x: x[1], reverse=True)
-        leaderboard_title = small_font.render('Leaderboard:', True, (255,255,0))
-        screen.blit(leaderboard_title, (10,100))
+        
+        leaderboard_y = 120
+        leaderboard_title = small_font.render('Leaderboard:', True, (255, 255, 0))
+        screen.blit(leaderboard_title, (10, leaderboard_y))
         for i, (name, score) in enumerate(all_players_scores[:5]):
-            text = small_font.render(f'{i+1}. {name}: {score}', True, (255,255,255))
-            screen.blit(text, (10,130 + i*25))
-
+            text = small_font.render(f'{i+1}. {name}: {score}', True, (255, 255, 255))
+            screen.blit(text, (10, leaderboard_y + 30 + i * 25))
+        
         pygame.display.flip()
-
+    
     pygame.quit()
 
 if __name__ == '__main__':
