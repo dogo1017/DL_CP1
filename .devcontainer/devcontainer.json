@@ -1,0 +1,17 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/python:0-3.11", // Example base image
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    }
+  },
+  "postCreateCommand": "pip install panda3d && apt-get update && apt-get install -y libgl1-mesa-glx libglitz-glx",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python"
+      ]
+    }
+  }
+}
