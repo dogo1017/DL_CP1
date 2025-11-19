@@ -1,24 +1,25 @@
 import os
-import sys
-import select
+from math import sin, cos, radians
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import loadPrcFileData, Filename, LVector3
+from panda3d.core import loadPrcFileData, Filename, Vec3
+from direct.task import Task
 from PIL import Image
-import math
 
 # -------------------------------
 # CONFIGURATION
 # -------------------------------
-FORCE_OFFSCREEN = False
+FORCE_OFFSCREEN = False  # True to always use offscreen
 NUM_FRAMES = 60
 SCREENSHOT_FOLDER = os.path.join("extra", "screenshots")
 GIF_FILENAME = "animation.gif"
-FRAME_DELAY_MS = 100
-CAM_SPEED = 5
-ROT_SPEED = 60
+FRAME_DELAY_MS = 100  # Delay between frames in the GIF
 
+CAM_SPEED = 10        # Camera move speed
+ROT_SPEED = 60        # Degrees per second
+
+# Automatically enable offscreen if no display exists
 if FORCE_OFFSCREEN or not os.environ.get("DISPLAY"):
-    OFFSCREEN_MODE = True
+    OFFSCREEN_MODE = 
     loadPrcFileData("", "window-type offscreen")
     loadPrcFileData("", "win-size 1024 768")
 else:
@@ -30,109 +31,100 @@ else:
 class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
-        self.disableMouse()
 
-        # Static environment (optional)
-        self.environment = self.loader.loadModel("models/environment")
-        self.environment.reparentTo(self.render)
-        self.environment.setScale(0.25)
-        self.environment.setPos(0, 10, -1)
-
-        # Reference panda at the center
+        # Load Panda model as reference
         self.panda = self.loader.loadModel("models/panda")
         self.panda.reparentTo(self.render)
-        self.panda.setScale(0.005)
-        self.panda.setPos(0, 10, 0)
-
-        # Camera initial position (offset from panda)
-        self.cam_distance = 10
-        self.cam_angle_h = 0  # Horizontal rotation
-        self.cam_angle_v = 15  # Vertical tilt
-        self.update_camera_position()
-
-        # Offscreen input handling
-        self.offscreen_commands = []
+        self.panda.setScale(0.5)
+        self.panda.setPos(0, 0, 0)
 
         if OFFSCREEN_MODE:
+            # Prepare screenshot folder
             os.makedirs(SCREENSHOT_FOLDER, exist_ok=True)
             self.frame_count = 0
             self.taskMgr.add(self.save_frame_task, "SaveFrameTask")
-            self.taskMgr.add(self.terminal_input_task, "TerminalInputTask")
+            # For terminal movement in offscreen, simple WASD text input
+            self.keys = {"w":0, "a":0, "s":0, "d":0, "i":0, "j":0, "k":0, "l":0}
+            self.cam.setPos(0, -20, 5)
+            self.cam.lookAt(self.panda)
+            self.taskMgr.add(self.offscreen_camera_task, "OffscreenCameraTask")
         else:
-            # Normal keyboard controls
-            self.accept("w", self.move_cam, ["forward"])
-            self.accept("s", self.move_cam, ["back"])
-            self.accept("a", self.move_cam, ["left"])
-            self.accept("d", self.move_cam, ["right"])
-            self.accept("i", self.rotate_cam, ["up"])
-            self.accept("k", self.rotate_cam, ["down"])
-            self.accept("j", self.rotate_cam, ["left"])
-            self.accept("l", self.rotate_cam, ["right"])
+            # Live window controls
+            self.disableMouse()
+            self.keys = {"w":0, "a":0, "s":0, "d":0, "i":0, "j":0, "k":0, "l":0}
+            for key in self.keys:
+                self.accept(key, self.update_key, [key, 1])
+                self.accept(key + "-up", self.update_key, [key, 0])
+            self.cam.setPos(0, -20, 5)
+            self.cam.lookAt(self.panda)
+            self.taskMgr.add(self.live_camera_task, "LiveCameraTask")
 
     # -------------------------------
-    # CAMERA CONTROL
+    # Key handling
     # -------------------------------
-    def update_camera_position(self):
-        # Convert spherical coordinates to cartesian for smooth orbit around panda
-        rad_h = math.radians(self.cam_angle_h)
-        rad_v = math.radians(self.cam_angle_v)
-        x = self.cam_distance * math.cos(rad_v) * math.sin(rad_h)
-        y = self.cam_distance * math.cos(rad_v) * math.cos(rad_h)
-        z = self.cam_distance * math.sin(rad_v)
-        self.cam.setPos(self.panda.getPos() + LVector3(x, y, z))
+    def update_key(self, key, value):
+        self.keys[key] = value
+
+    # -------------------------------
+    # Offscreen camera simulation
+    # -------------------------------
+    def offscreen_camera_task(self, task):
+        # For simplicity, move camera based on current key states (from terminal input)
+        # (Could be expanded to read input() periodically in a separate thread)
+        dt = globalClock.getDt()
+        hpr = self.cam.getHpr()
+        pos = self.cam.getPos()
+
+        # Rotate
+        if self.keys["j"]: hpr.x += ROT_SPEED * dt
+        if self.keys["l"]: hpr.x -= ROT_SPEED * dt
+        if self.keys["i"]: hpr.z += ROT_SPEED * dt
+        if self.keys["k"]: hpr.z -= ROT_SPEED * dt
+        self.cam.setHpr(hpr)
+
+        # Movement
+        forward = Vec3(cos(radians(hpr.x)), sin(radians(hpr.x)), 0)
+        right = Vec3(-forward.y, forward.x, 0)
+        move = Vec3(0,0,0)
+        if self.keys["w"]: move += forward
+        if self.keys["s"]: move -= forward
+        if self.keys["a"]: move -= right
+        if self.keys["d"]: move += right
+
+        self.cam.setPos(pos + move * CAM_SPEED * dt)
         self.cam.lookAt(self.panda)
-
-    def move_cam(self, direction, dt=1/60):
-        # Move the camera around the panda in orbit-like fashion
-        if direction == "forward":
-            self.cam_distance = max(2, self.cam_distance - CAM_SPEED * dt)
-        elif direction == "back":
-            self.cam_distance += CAM_SPEED * dt
-        elif direction == "left":
-            self.cam_angle_h += ROT_SPEED * dt
-        elif direction == "right":
-            self.cam_angle_h -= ROT_SPEED * dt
-        self.update_camera_position()
-
-    def rotate_cam(self, direction, dt=1/60):
-        if direction == "up":
-            self.cam_angle_v = min(89, self.cam_angle_v + ROT_SPEED * dt)
-        elif direction == "down":
-            self.cam_angle_v = max(-10, self.cam_angle_v - ROT_SPEED * dt)
-        elif direction == "left":
-            self.cam_angle_h += ROT_SPEED * dt
-        elif direction == "right":
-            self.cam_angle_h -= ROT_SPEED * dt
-        self.update_camera_position()
+        return Task.cont
 
     # -------------------------------
-    # OFFSCREEN TERMINAL INPUT
+    # Live window camera task
     # -------------------------------
-    def terminal_input_task(self, task):
-        if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-            line = sys.stdin.readline().strip().lower()
-            for cmd in line:
-                if cmd in "wasdijkl":
-                    self.offscreen_commands.append(cmd)
+    def live_camera_task(self, task):
+        dt = globalClock.getDt()
+        hpr = self.cam.getHpr()
+        pos = self.cam.getPos()
 
-        if self.offscreen_commands:
-            cmd = self.offscreen_commands.pop(0)
-            self.process_offscreen_command(cmd)
-        return task.cont
+        # Rotate
+        if self.keys["j"]: hpr.x += ROT_SPEED * dt
+        if self.keys["l"]: hpr.x -= ROT_SPEED * dt
+        if self.keys["i"]: hpr.z += ROT_SPEED * dt
+        if self.keys["k"]: hpr.z -= ROT_SPEED * dt
+        self.cam.setHpr(hpr)
 
-    def process_offscreen_command(self, cmd):
-        dt = 1/60
-        if cmd == "w": self.move_cam("forward", dt)
-        elif cmd == "s": self.move_cam("back", dt)
-        elif cmd == "a": self.move_cam("left", dt)
-        elif cmd == "d": self.move_cam("right", dt)
-        elif cmd == "i": self.rotate_cam("up", dt)
-        elif cmd == "k": self.rotate_cam("down", dt)
-        elif cmd == "j": self.rotate_cam("left", dt)
-        elif cmd == "l": self.rotate_cam("right", dt)
+        # Movement
+        forward = Vec3(cos(radians(hpr.x)), sin(radians(hpr.x)), 0)
+        right = Vec3(-forward.y, forward.x, 0)
+        move = Vec3(0,0,0)
+        if self.keys["w"]: move += forward
+        if self.keys["s"]: move -= forward
+        if self.keys["a"]: move -= right
+        if self.keys["d"]: move += right
+
+        self.cam.setPos(pos + move * CAM_SPEED * dt)
+        self.cam.lookAt(self.panda)
+        return Task.cont
 
     # -------------------------------
-    # SCREENSHOT / GIF
+    # Screenshot task
     # -------------------------------
     def save_frame_task(self, task):
         filename = os.path.join(SCREENSHOT_FOLDER, f"screenshot_{self.frame_count:03}.png")
@@ -147,6 +139,9 @@ class MyApp(ShowBase):
             self.userExit()
         return task.cont
 
+    # -------------------------------
+    # GIF creation
+    # -------------------------------
     def create_gif(self):
         frames = []
         for i in range(NUM_FRAMES):
@@ -164,6 +159,9 @@ class MyApp(ShowBase):
         )
         print(f"GIF saved as {gif_path}")
 
+    # -------------------------------
+    # Cleanup
+    # -------------------------------
     def cleanup_screenshots(self):
         for file in os.listdir(SCREENSHOT_FOLDER):
             if file.endswith(".png"):
