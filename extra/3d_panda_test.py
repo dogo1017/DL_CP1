@@ -5,9 +5,7 @@ from panda3d.core import loadPrcFileData, Filename, Vec3
 from direct.task import Task
 from PIL import Image
 
-# -------------------------------
-# CONFIGURATION
-# -------------------------------
+OFFSCREEN_MODE = False
 FORCE_OFFSCREEN = False  # True to always use offscreen
 NUM_FRAMES = 60
 SCREENSHOT_FOLDER = os.path.join("extra", "screenshots")
@@ -17,17 +15,6 @@ FRAME_DELAY_MS = 100  # Delay between frames in the GIF
 CAM_SPEED = 10        # Camera move speed
 ROT_SPEED = 60        # Degrees per second
 
-# Automatically enable offscreen if no display exists
-if FORCE_OFFSCREEN or not os.environ.get("DISPLAY"):
-    OFFSCREEN_MODE = 
-    loadPrcFileData("", "window-type offscreen")
-    loadPrcFileData("", "win-size 1024 768")
-else:
-    OFFSCREEN_MODE = False
-
-# -------------------------------
-# GAME CLASS
-# -------------------------------
 class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
@@ -39,11 +26,9 @@ class MyApp(ShowBase):
         self.panda.setPos(0, 0, 0)
 
         if OFFSCREEN_MODE:
-            # Prepare screenshot folder
             os.makedirs(SCREENSHOT_FOLDER, exist_ok=True)
             self.frame_count = 0
             self.taskMgr.add(self.save_frame_task, "SaveFrameTask")
-            # For terminal movement in offscreen, simple WASD text input
             self.keys = {"w":0, "a":0, "s":0, "d":0, "i":0, "j":0, "k":0, "l":0}
             self.cam.setPos(0, -20, 5)
             self.cam.lookAt(self.panda)
@@ -59,18 +44,13 @@ class MyApp(ShowBase):
             self.cam.lookAt(self.panda)
             self.taskMgr.add(self.live_camera_task, "LiveCameraTask")
 
-    # -------------------------------
-    # Key handling
-    # -------------------------------
+
+
     def update_key(self, key, value):
         self.keys[key] = value
 
-    # -------------------------------
-    # Offscreen camera simulation
-    # -------------------------------
+
     def offscreen_camera_task(self, task):
-        # For simplicity, move camera based on current key states (from terminal input)
-        # (Could be expanded to read input() periodically in a separate thread)
         dt = globalClock.getDt()
         hpr = self.cam.getHpr()
         pos = self.cam.getPos()
@@ -87,17 +67,15 @@ class MyApp(ShowBase):
         right = Vec3(-forward.y, forward.x, 0)
         move = Vec3(0,0,0)
         if self.keys["w"]: move += forward
-        if self.keys["s"]: move -= forward
-        if self.keys["a"]: move -= right
+        if self.keys["a"]: move -= forward
+        if self.keys["s"]: move -= right
         if self.keys["d"]: move += right
 
         self.cam.setPos(pos + move * CAM_SPEED * dt)
         self.cam.lookAt(self.panda)
         return Task.cont
 
-    # -------------------------------
-    # Live window camera task
-    # -------------------------------
+
     def live_camera_task(self, task):
         dt = globalClock.getDt()
         hpr = self.cam.getHpr()
@@ -123,9 +101,7 @@ class MyApp(ShowBase):
         self.cam.lookAt(self.panda)
         return Task.cont
 
-    # -------------------------------
-    # Screenshot task
-    # -------------------------------
+
     def save_frame_task(self, task):
         filename = os.path.join(SCREENSHOT_FOLDER, f"screenshot_{self.frame_count:03}.png")
         self.win.saveScreenshot(Filename(filename))
@@ -139,9 +115,6 @@ class MyApp(ShowBase):
             self.userExit()
         return task.cont
 
-    # -------------------------------
-    # GIF creation
-    # -------------------------------
     def create_gif(self):
         frames = []
         for i in range(NUM_FRAMES):
@@ -159,18 +132,14 @@ class MyApp(ShowBase):
         )
         print(f"GIF saved as {gif_path}")
 
-    # -------------------------------
-    # Cleanup
-    # -------------------------------
+
     def cleanup_screenshots(self):
         for file in os.listdir(SCREENSHOT_FOLDER):
             if file.endswith(".png"):
                 os.remove(os.path.join(SCREENSHOT_FOLDER, file))
         print("Deleted individual screenshot files, kept the GIF.")
 
-# -------------------------------
-# RUN
-# -------------------------------
+
 if __name__ == "__main__":
     app = MyApp()
     app.run()
