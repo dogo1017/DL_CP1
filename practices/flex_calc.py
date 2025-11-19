@@ -1,7 +1,5 @@
 #DL 1st, flex calc practice
 
-
-
 # Greet the user and show available operations
 print("Welcome to the Flexible Calculator!")
 print("Available operations: sum, average, max, min, product")
