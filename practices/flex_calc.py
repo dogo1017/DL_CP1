@@ -6,6 +6,28 @@ def sum(*nums):
         sum += num
     return(sum)
 
+def avg(*nums):
+    total = sum(nums)
+    average = total/len(nums)
+    return average
+
+def max(*nums):
+    cur_top = 0
+    for num in nums:
+        if num > cur_top:
+            cur_top = num
+
+def min(*nums):
+    cur_top = 0
+    for num in nums:
+        if num < cur_top:
+            cur_top = num
+
+def product(*nums):
+    total = 1
+    for num in nums:
+        total *= num
+    return total
 
 print("Welcome to the Flexible Calculator!")
 
