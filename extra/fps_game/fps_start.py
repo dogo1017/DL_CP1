@@ -147,9 +147,9 @@ class MyApp(ShowBase):
             dy = mp.getY() - self.centerY
 
             if self.firstPerson:
-                self.pandaActor.setH(self.pandaActor.getH() - dx * 0.2)
+                self.pandaActor.setH(self.pandaActor.getH() - dx * -0.2)
             else:
-                self.pandaActor.setH(self.pandaActor.getH() + dx * 0.2)
+                self.pandaActor.setH(self.pandaActor.getH() + dx * -0.2)
             
             self.pitch = max(-45, min(45, self.pitch - dy * 0.2))
 
