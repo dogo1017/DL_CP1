@@ -1,7 +1,8 @@
 #DL 1st, factorial calc practice
 
-# display_factorial(number)
+#make a function for stupid proofing
 def display_factorial(number_str):
+    # use try and except to try to change input to int
     try:
         number = int(number_str)
         if number > 0:
