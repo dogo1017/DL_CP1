@@ -125,7 +125,7 @@ class MyApp(ShowBase):
         if self.firstPerson:
             forward_offset = 1.5
             offset = Vec3(sin(heading_rad) * forward_offset, cos(heading_rad) * forward_offset, 1.8)
-            self.camera.setPos(pandaPos + offset)
+            self.camera.setPos((pandaPos + offset) * -1)
             self.camera.setHpr(self.pandaActor.getH(), self.pitch, 0)
         else:
             horizontal_dist = 13 * cos(pitch_rad)
@@ -143,7 +143,7 @@ class MyApp(ShowBase):
             return Task.cont
         if self.mouseWatcherNode.hasMouse():
             mp = self.win.getPointer(0)
-            dx = mp.getX() - self.centerX
+            dx = -(mp.getX() - self.centerX)
             dy = mp.getY() - self.centerY
 
             if self.firstPerson:
