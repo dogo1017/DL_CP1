@@ -1,6 +1,5 @@
 
-# SAVE / LOAD SYSTEM
-
+# LOAD SAVE
 
 # define save_game function:
 #   - gather player pokemon IDs, joined by 'P'
@@ -196,6 +195,7 @@
 
 
 # MAIN GAME LOOP
+
 
 # while True:
 #   - show main menu: new game, load game, credits, quit
