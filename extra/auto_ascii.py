@@ -1,293 +1,126 @@
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-import time
-import json
-import os
+from bs4 import BeautifulSoup
 from ascii_magic import AsciiArt
+import ascii_magic
+import os
+import time
 from urllib.parse import urljoin
-from tqdm import tqdm
-import logging
+import json
 
-# ----------------- CONFIG -----------------
-OUTPUT_FILE = "pokemon_database_all.json"
-IMAGE_DIR = "pokemon_images_db"         # set to None to skip saving images
-SMALL_WIDTH = 40
-LARGE_WIDTH = 100
-REQUEST_DELAY = 0.65    # seconds between requests (be polite; adjust if you hit rate limits)
-USE_OFFICIAL_ARTWORK = True
-MAX_POKEMON = None      # set to an int to limit for testing; None = all
-LOG_LEVEL = logging.INFO
-# ------------------------------------------
 
-logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s: %(message)s")
+POKEMON_DB_URL = "https://pokemondb.net/pokedex/all"
+BASE_URL = "https://pokemondb.net"
+TARGET_WIDTH = 120
+IMAGE_DIR = 'pokemon_images_db'
+OUTPUT_FILE = 'pokemon_database_db.json'
 
-API_BASE = "https://pokeapi.co/api/v2/"
-POKEMON_LIST_ENDPOINT = urljoin(API_BASE, "pokemon?limit=100000&offset=0")
 
-# Ensure image dir
-if IMAGE_DIR:
-    os.makedirs(IMAGE_DIR, exist_ok=True)
+os.makedirs(IMAGE_DIR, exist_ok=True)
+all_pokemon_data = {}
 
-# Session with retries
-session = requests.Session()
-retries = Retry(total=5, backoff_factor=1, status_forcelist=(429, 500, 502, 503, 504))
-session.mount("https://", HTTPAdapter(max_retries=retries))
-session.headers.update({
-    "User-Agent": "PokemonDBBuilder/1.0 (+https://example.local) ascii_magic script"
-})
 
-def safe_get(url):
-    """HTTP GET with error handling. Returns JSON if possible or raw content when requested."""
-    try:
-        r = session.get(url, timeout=30)
-        r.raise_for_status()
-        # try to parse JSON safely
-        content_type = r.headers.get("Content-Type", "")
-        if "application/json" in content_type:
-            return r.json()
-        return r.content
-    except requests.HTTPError as e:
-        logging.warning(f"HTTP error for {url}: {e}")
-    except requests.RequestException as e:
-        logging.warning(f"Request exception for {url}: {e}")
-    return None
+headers = {
+   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+}
 
-def fetch_all_pokemon_list():
-    """Get list of all pokemon resource entries from the API."""
-    logging.info("Fetching list of all Pokémon from PokéAPI...")
-    data = safe_get(POKEMON_LIST_ENDPOINT)
-    if not data or "results" not in data:
-        raise RuntimeError("Could not fetch the master pokemon list.")
-    return data["results"]
 
 def download_image(url, name):
-    """Downloads an image and returns local path or None."""
-    if not url:
-        return None
-    try:
-        r = session.get(url, stream=True, timeout=30)
-        r.raise_for_status()
-        if not IMAGE_DIR:
-            # If not saving images, write to temp file and return path
-            path = f"/tmp/{name}.png"
-        else:
-            path = os.path.join(IMAGE_DIR, f"{name}.png")
-        with open(path, "wb") as fh:
-            for chunk in r.iter_content(1024):
-                fh.write(chunk)
-        return path
-    except Exception as e:
-        logging.warning(f"Failed downloading image {url}: {e}")
-        return None
+   img_path = f"{IMAGE_DIR}/{name}.png"
+   try:
+       response = requests.get(url, stream=True, headers=headers)
+       if response.status_code == 200:
+           with open(img_path, 'wb') as f:
+               for chunk in response.iter_content(1024):
+                   f.write(chunk)
+           return img_path
+   except requests.exceptions.RequestException as e:
+       print(f"Error downloading image from {url}: {e}")
+   return None
+
 
 def convert_image_to_ascii(image_path, width):
-    """Return ASCII art string using ascii_magic. Returns empty string on failure."""
-    try:
-        art = AsciiArt.from_image(image_path)
-        return art.to_ascii(columns=width, monochrome=False)
-    except Exception as e:
-        logging.warning(f"ASCII conversion failed for {image_path}: {e}")
-        return ""
+   try:
+       my_art = AsciiArt.from_image(
+           image_path
+       )
+       my_art.to_terminal(columns=width)
+       return my_art.art
+   except Exception as e:
+       print(f"Error converting image {image_path} to ASCII: {e}")
+       return ""
 
-def parse_evolution_chain(chain_obj):
-    """
-    Recursively parse a PokeAPI evolution chain object into a flat list of transitions.
-    Format returned: list of dicts like {'from': 'Pichu', 'to': 'Pikachu', 'trigger': 'level-up', 'details': {...}}
-    """
-    evo_list = []
 
-    def walk(node, from_species=None):
-        species_name = node['species']['name'].capitalize()
-        if from_species:
-            # node contains how it evolves from from_species
-            # Each 'evolution_details' entry contains triggers, items, min_level, etc.
-            for detail in node.get('evolution_details', []):
-                readable = {
-                    'trigger': detail.get('trigger', {}).get('name') if isinstance(detail.get('trigger'), dict) else detail.get('trigger'),
-                    'item': detail.get('item', {}).get('name') if detail.get('item') else None,
-                    'min_level': detail.get('min_level'),
-                    'gender': detail.get('gender'),
-                    'time_of_day': detail.get('time_of_day'),
-                    'known_move': detail.get('known_move', {}).get('name') if detail.get('known_move') else None,
-                    'location': detail.get('location', {}).get('name') if detail.get('location') else None,
-                    'other': {k: v for k, v in detail.items() if k not in ['trigger', 'item', 'min_level', 'gender', 'time_of_day', 'known_move', 'location']}
-                }
-                evo_list.append({
-                    'from': from_species,
-                    'to': species_name,
-                    'details': readable
-                })
-        # recurse for evolves_to
-        for child in node.get('evolves_to', []):
-            walk(child, species_name)
 
-    # the top-level chain root contains 'species' and 'evolves_to'
-    walk(chain_obj, from_species=None)
-    return evo_list
 
-def get_pokemon_data(pokemon_resource):
-    """
-    Given a resource element with 'name' and 'url' (from /pokemon list),
-    fetches pokemon endpoint, species endpoint, evolution chain, artwork, moves, stats, etc.
-    Returns a dict ready to be JSON-serializable.
-    """
-    name = pokemon_resource['name']  # lowercase as in API
-    # endpoints
-    pokemon_url = pokemon_resource['url']  # e.g. https://pokeapi.co/api/v2/pokemon/1/
-    # fetch pokemon
-    poke = safe_get(pokemon_url)
-    time.sleep(REQUEST_DELAY)
-    if not poke:
-        logging.warning(f"Skipping {name}: failed to fetch pokemon endpoint.")
-        return None
 
-    # fetch species
-    species_url = poke.get('species', {}).get('url')
-    species = safe_get(species_url) if species_url else None
-    time.sleep(REQUEST_DELAY)
 
-    # basic info
-    display_name = poke.get('name', name).capitalize()
-    pokedex_number = poke.get('id')
-    types = [t['type']['name'].capitalize() for t in poke.get('types', [])]
+print(f"Attempting to fetch data from {POKEMON_DB_URL}...")
+try:
+   page_response = requests.get(POKEMON_DB_URL, headers=headers)
+   page_response.raise_for_status()
+   soup = BeautifulSoup(page_response.content, 'html.parser')
 
-    # stats mapping: poke['stats'] is an array; map by 'stat' name to base_stat
-    stat_map = {}
-    for s in poke.get('stats', []):
-        stat_name = s['stat']['name']
-        base = s['base_stat']
-        # normalize names
-        if stat_name == 'hp':
-            stat_map['hp'] = base
-        elif stat_name == 'attack':
-            stat_map['attack'] = base
-        elif stat_name == 'defense':
-            stat_map['defense'] = base
-        elif stat_name == 'special-attack':
-            stat_map['special_attack'] = base
-        elif stat_name == 'special-defense':
-            stat_map['special_defense'] = base
-        elif stat_name == 'speed':
-            stat_map['speed'] = base
 
-    # abilities
-    abilities = []
-    for a in poke.get('abilities', []):
-        ability_name = a['ability']['name']
-        abilities.append({
-            'name': ability_name.replace('-', ' ').title(),
-            'is_hidden': a.get('is_hidden', False),
-            'slot': a.get('slot')
-        })
+   pokedex_table = soup.find('table', {'id': 'pokedex'})
+   if not pokedex_table:
+       print("Could not find the Pokédex table.")
+       exit()
+  
+   rows = pokedex_table.find('tbody').find_all('tr')
+  
+   for row in rows:
+       cols = row.find_all('td')
+       if len(cols) > 1:
+           name_anchor = cols[1].find('a', class_='ent-name')
+           if not name_anchor:
+               continue
 
-    # moves: expand each move with version_group_details (may be multiple entries)
-    moves = []
-    for m in poke.get('moves', []):
-        move_obj = {'move_name': m['move']['name'].replace('-', ' ').title(), 'details': []}
-        for det in m.get('version_group_details', []):
-            move_learn_method = det.get('move_learn_method', {}).get('name')
-            version_group = det.get('version_group', {}).get('name')
-            level_learned = det.get('level_learned_at')
-            move_obj['details'].append({
-                'version_group': version_group,
-                'learn_method': move_learn_method,
-                'level': level_learned
-            })
-        moves.append(move_obj)
 
-    # get flavor text (english) - species contains flavor_text_entries
-    description = "N/A"
-    if species:
-        entries = species.get('flavor_text_entries', [])
-        for entry in entries:
-            if entry.get('language', {}).get('name') == 'en':
-                description = entry.get('flavor_text', '').replace('\n', ' ').replace('\x0c', ' ').strip()
-                break
+           pokemon_name = name_anchor.text.strip()
+           img_tag = cols[0].find('img')
+          
+           img_url = img_tag.get('data-src') or img_tag.get('src')
+           if img_url and 'http' not in img_url:
+                img_url = urljoin(BASE_URL, img_url)
 
-    # get catch rate & base experience & growth_rate
-    catch_rate = None
-    base_exp = poke.get('base_experience')
-    if species:
-        catch_rate = species.get('capture_rate')
 
-    # evolution chain parsing
-    evolution_details = []
-    if species and species.get('evolution_chain', {}).get('url'):
-        evo_url = species['evolution_chain']['url']
-        evo_resp = safe_get(evo_url)
-        time.sleep(REQUEST_DELAY)
-        if evo_resp and 'chain' in evo_resp:
-            evo_list = parse_evolution_chain(evo_resp['chain'])
-            evolution_details = evo_list
+           stats = {
+               'hp': int(cols[4].text.strip()),
+               'attack': int(cols[5].text.strip()),
+               'defense': int(cols[6].text.strip()),
+               'sp_atk': int(cols[7].text.strip()),
+               'sp_def': int(cols[8].text.strip()),
+               'speed': int(cols[9].text.strip())
+           }
 
-    # pick best artwork: official-artwork front_default if available, else sprite front_default
-    image_url = None
-    if USE_OFFICIAL_ARTWORK:
-        image_url = poke.get('sprites', {}).get('other', {}).get('official-artwork', {}).get('front_default')
-    if not image_url:
-        image_url = poke.get('sprites', {}).get('front_default')
 
-    # download & ascii convert
-    small_ascii = ""
-    large_ascii = ""
-    image_path = None
-    if image_url:
-        image_path = download_image(image_url, f"{display_name}-{pokedex_number}")
-        time.sleep(REQUEST_DELAY)
-        if image_path:
-            small_ascii = convert_image_to_ascii(image_path, SMALL_WIDTH)
-            large_ascii = convert_image_to_ascii(image_path, LARGE_WIDTH)
-            # optionally keep or remove image files
-            if not IMAGE_DIR:
-                try:
-                    os.remove(image_path)
-                except:
-                    pass
+           image_path = download_image(img_url, pokemon_name)
+           if image_path:
+               ascii_art = convert_image_to_ascii(image_path, TARGET_WIDTH)
+               all_pokemon_data[pokemon_name] = {
+                   'stats': stats,
+                   'ascii_art': ascii_art
+               }
+               os.remove(image_path)
+               print(f"Processed {pokemon_name}")
+          
+           time.sleep(0.5)
 
-    # build the dict
-    result = {
-        'name': display_name,
-        'pokedex_number': pokedex_number,
-        'type': types,
-        'description': description,
-        'base_stats': stat_map,
-        'abilities': abilities,
-        'catch_rate': catch_rate,
-        'base_experience_yield': base_exp,
-        'evolution_details': evolution_details,
-        'learnable_moves': moves,
-        'small_ascii': small_ascii,
-        'large_ascii': large_ascii,
-        'artwork_url': image_url
-    }
-    return result
 
-def main():
-    all_pokemon = []
-    resources = fetch_all_pokemon_list()
-    if MAX_POKEMON:
-        resources = resources[:MAX_POKEMON]
-    logging.info(f"Found {len(resources)} pokemon entries. Beginning processing...")
+except requests.exceptions.RequestException as e:
+   print(f"Failed to fetch the main Pokédex page: {e}")
+   exit()
 
-    # iterate with progress bar
-    for res in tqdm(resources, desc="Pokémon", unit="pkmn"):
-        try:
-            data = get_pokemon_data(res)
-            if data:
-                all_pokemon.append(data)
-        except Exception as e:
-            logging.exception(f"Unexpected error processing {res.get('name')}: {e}")
-        # small delay to keep things polite (already added between requests inside functions)
-        # time.sleep(REQUEST_DELAY)
 
-    # Save JSON
-    logging.info(f"Saving {len(all_pokemon)} Pokémon to {OUTPUT_FILE} ...")
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as fh:
-        json.dump(all_pokemon, fh, indent=2, ensure_ascii=False)
+with open(OUTPUT_FILE, 'w') as f:
+   json.dump(all_pokemon_data, f, indent=4)
 
-    logging.info("Done.")
 
-if __name__ == "__main__":
-    main()
+print(f"\nSuccessfully scraped {len(all_pokemon_data)} Pokémon. Data saved to {OUTPUT_FILE}")
 
+
+# >>>>> Add this line to see the raw string for ONE pokemon <<<<<
+# We use repr() to see the literal ANSI codes (e.g. \x1b[38;2;...m)
+print("\nRAW ASCII ART STRING EXAMPLE (Copy this for your Python code):\n")
+if 'Bulbasaur' in all_pokemon_data:
+   print(repr(all_pokemon_data['Bulbasaur']['ascii_art']))
