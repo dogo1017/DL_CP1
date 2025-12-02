@@ -1,3 +1,27 @@
+#DL 1st, final project 
+
+"""
+IMPORTANT - Game is in multiple files, the pokemon and items are in other files, make sure you have all the files needed with the correct naming. 
+"""
+
+
+
+
+import os
+import sys
+from io import StringIO
+
+# Variables:
+
+captured_output = StringIO()
+
+sys.stdout = captured_output
+
+# list of all pokemon, type, names, evolution/s, pokidex number
+
+# list of pokemon player owns, current moves, and stats
+
+# list of all items, the stats they change, and time (e.g. health, 1, 5.0)
 
 # LOAD SAVE
 
@@ -19,16 +43,81 @@
 
 # PAUSE MENU + INPUT SYSTEM
 
+# define new_scene function:
+#   - empties the current save of teminal output in variable
+#   - clears screen
+
+def new_scene():
+    global captured_output # try to change to not include global
+    captured_output = None
+    sys.stdout = captured_output
+    sys.stdout = sys.__stdout__
+
+# define restore_scene:
+#   - restore saved terminal output into terminal so player can resume normal gameplay
+
+def restore_scene():
+    game_log_string = captured_output.getvalue()
+    game_log_list = game_log_string.splitlines()
+    for line in game_log_list:
+        print(line)
 
 # define pause_menu function:
 #   - clear screen
 #   - show options: save, load, inventory, pokedex, map, return
 #   - run correct function based on user choice
 
+def pause_menu():
+    captured_output = StringIO()
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+    
+    print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
+
 # define isopt function:
 #   - take input and list of valid options
 #   - if input == 'p': open pause_menu
 #   - otherwise return valid option
+
+def ginput(prompt, *val_opts):
+    val_inp = False
+    while not val_inp:
+        user_input = input(prompt) 
+
+        normalized_input = user_input.lower().strip()
+        if normalized_input == "p":
+            pause_menu()
+            continue
+ 
+        if user_input in val_opts:
+            val_inp = True
+            cor_val = user_input
+            break
+
+        try:
+            int_val = int(user_input)
+            if int_val in val_opts:
+                val_inp = True
+                cor_val = int_val
+                break
+        except ValueError:
+            try:
+                float_val = float(user_input)
+                if float_val in val_opts:
+                    val_inp = True
+                    cor_val = float_val
+                    break
+            except ValueError:
+                pass
+
+        if not val_inp:
+            print(f"Invalid input: '{user_input}'. Please choose from {val_opts} or type 'p' for pause menu.")
+    return cor_val
+            
+        else:
+            print(f"'{input}' is not a valid choice")
 
 
 
@@ -38,6 +127,11 @@
 # define open_inventory function:
 #   - list all items with quantities
 #   - let player choose to use items or sort
+
+def open_inv():
+    new_scene()
+    print("1) Potions\n2) Party\n")
+
 
 # define use_item function:
 #   - heal pokemon, cure status, use pokeball, etc.
@@ -60,14 +154,18 @@
 #   - allow search by name or type
 
 
-
 # BATTLE SYSTEM
 
 
 # define player_turn function:
-#   - options: attack, items, switch, run, defend(optional)
+#   - options: attack, items, switch, run
 #   - use isopt to validate
 #   - return chosen action
+
+def player_turn(cur_player_bat, cur_op_bat):
+    print("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
+    ginput()
+
 
 # define op_turn function:  # gym leaders & trainers
 #   - choose strongest or random move
@@ -196,7 +294,6 @@
 
 # MAIN GAME LOOP
 
-
 # while True:
 #   - show main menu: new game, load game, credits, quit
 #   - if new game: choose starter pokemon
@@ -205,3 +302,9 @@
 #   - continue game through gym progression
 #   - after final gym, unlock mew area
 #   - after beating mew, show victory screen and option to keep playing
+
+
+while True:
+    print("Pokemon")
+    print("1) Load Save Data\n2) Start New Game\n")
+    ginput()
