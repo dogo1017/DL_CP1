@@ -1,27 +1,110 @@
-#DL 1st, final project 
+# DL 1st, final project 
 
 """
-IMPORTANT - Game is in multiple files, the pokemon and items are in other files, make sure you have all the files needed with the correct naming. 
+IMPORTANT - Game is probably in multiple files, the pokemon and items are in other files, make sure you have all the files needed with the correct naming. 
 """
 
-
-
-
+import time
+import random
 import os
 import sys
 from io import StringIO
 
+
 # Variables:
 
+
 captured_output = StringIO()
+current_scene_log = []
 
-sys.stdout = captured_output
+def clear_screen():
+    if os.name == 'nt':  # Windows
+        os.system('cls')
+    else:  # macOS / Linux
+        os.system('clear')
 
-# list of all pokemon, type, names, evolution/s, pokidex number
+def new_scene():
+    """Start a new scene: clears terminal and resets scene log."""
+    global captured_output, current_scene_log
+    captured_output = StringIO()
+    current_scene_log = []
+    clear_screen()
+
+def restore_scene():
+    """Restore the current scene to terminal."""
+    clear_screen()
+    for line in current_scene_log:
+        print(line)
+
+def log_print(message):
+    """Print live AND save message to current scene."""
+    print(message)
+    current_scene_log.append(message)
+
+def text(message, delay=0.05):
+    """Typewriter effect, live printing, saves to scene log."""
+    for i, char in enumerate(message):
+        if i == len(message) - 1:
+            print(char)
+        else:
+            print(char, end='', flush=True)
+            time.sleep(delay)
+    current_scene_log.append(message)
+
+
+# list of all pokemon, type, names, evolution/s, pokedex number
+original_pokemon_data = {
+    "Charmander": {
+        "species_name": "Charmander",
+        "type": ["fire"],
+        "base_hp": 20,
+        "base_atk": 8,
+        "base_defense": 5,
+        "base_speed": 7,
+        "evolutions": [{"to":"Charmeleon","level":16}],
+        "ascii_battle": "LARGE ASCII HERE",
+        "ascii_small": "SMALL ASCII HERE",
+        "ascii_silhouette": "SILHOUETTE HERE",
+        "pokedex_id": "1",
+        "possible_moves": ["Scratch","Ember","Flamethrower"]
+    },
+    "Bulbasaur": {
+        "species_name": "Bulbasaur",
+        "type": ["grass"],
+        "base_hp": 21,
+        "base_atk": 7,
+        "base_defense": 6,
+        "base_speed": 6,
+        "evolutions": [{"to":"Ivysaur","level":16}],
+        "ascii_battle": "LARGE ASCII HERE",
+        "ascii_small": "SMALL ASCII HERE",
+        "ascii_silhouette": "SILHOUETTE HERE",
+        "pokedex_id": "2", #placeholders, not real ids
+        "possible_moves": ["Tackle","Vine Whip","Growl"]
+    }
+}
 
 # list of pokemon player owns, current moves, and stats
+player_pokemon = {
+    1: {
+        "nickname": "Flamey",
+        "species_name": "Charmander",
+        "level": 5,
+        "type": ["fire"],
+        "hp": 20,
+        "max_hp": 20,
+        "atk": 8,
+        "defense": 5,
+        "speed": 7,
+        "moves": ["Scratch","Ember"],  # currently knows
+        "gender": "male",
+        "pokedex_inv_id": 1
+    }
+}
 
-# list of all items, the stats they change, and time (e.g. health, 1, 5.0)
+starter_pokemon = [1,2]
+
+# list of all items, the stats they change, and time (e.g. health, 1, 5.0, extra info or abilities)
 
 # LOAD SAVE
 
@@ -47,78 +130,53 @@ sys.stdout = captured_output
 #   - empties the current save of teminal output in variable
 #   - clears screen
 
-def new_scene():
-    global captured_output # try to change to not include global
-    captured_output = None
-    sys.stdout = captured_output
-    sys.stdout = sys.__stdout__
-
-# define restore_scene:
-#   - restore saved terminal output into terminal so player can resume normal gameplay
-
-def restore_scene():
-    game_log_string = captured_output.getvalue()
-    game_log_list = game_log_string.splitlines()
-    for line in game_log_list:
-        print(line)
-
-# define pause_menu function:
-#   - clear screen
-#   - show options: save, load, inventory, pokedex, map, return
-#   - run correct function based on user choice
-
 def pause_menu():
-    captured_output = StringIO()
-    if os.name == 'nt':
-        os.system('cls')
+    new_scene()
+    log_print("PAUSE MENU")
+    log_print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
+    choice = ginput("Choose an option: ", "1","2","3","4","5","6")
+    # placeholder logic for pause menu actions
+    if choice == "6":
+        restore_scene()
     else:
-        os.system('clear')
-    
-    print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
+        log_print(f"Option {choice} selected. (Feature not implemented yet)")
+        time.sleep(1)
+        restore_scene()
 
-# define isopt function:
+
+# define ginput function:
 #   - take input and list of valid options
 #   - if input == 'p': open pause_menu
 #   - otherwise return valid option
 
 def ginput(prompt, *val_opts):
-    val_inp = False
-    while not val_inp:
-        user_input = input(prompt) 
-
-        normalized_input = user_input.lower().strip()
-        if normalized_input == "p":
+    while True:
+        user_input = input(prompt).strip()
+        if user_input.lower() == "p":
             pause_menu()
             continue
- 
+        
+        # Check if input matches a valid option (as string)
         if user_input in val_opts:
-            val_inp = True
-            cor_val = user_input
-            break
-
+            return user_input
+        
+        # Try int
         try:
             int_val = int(user_input)
             if int_val in val_opts:
-                val_inp = True
-                cor_val = int_val
-                break
+                return int_val
         except ValueError:
-            try:
-                float_val = float(user_input)
-                if float_val in val_opts:
-                    val_inp = True
-                    cor_val = float_val
-                    break
-            except ValueError:
-                pass
+            pass
 
-        if not val_inp:
-            print(f"Invalid input: '{user_input}'. Please choose from {val_opts} or type 'p' for pause menu.")
-    return cor_val
-            
-        else:
-            print(f"'{input}' is not a valid choice")
+        # Try float
+        try:
+            float_val = float(user_input)
+            if float_val in val_opts:
+                return float_val
+        except ValueError:
+            pass
 
+        log_print(f"Invalid input: '{user_input}'. Please choose from {val_opts} or type 'p' for pause menu.")
 
 
 # INVENTORY + PARTY MANAGEMENT
@@ -130,7 +188,7 @@ def ginput(prompt, *val_opts):
 
 def open_inv():
     new_scene()
-    print("1) Potions\n2) Party\n")
+    log_print("1) Potions\n2) Party\n")
 
 
 # define use_item function:
@@ -163,7 +221,7 @@ def open_inv():
 #   - return chosen action
 
 def player_turn(cur_player_bat, cur_op_bat):
-    print("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
+    log_print("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
     ginput()
 
 
@@ -304,7 +362,35 @@ def player_turn(cur_player_bat, cur_op_bat):
 #   - after beating mew, show victory screen and option to keep playing
 
 
+# Ask player name
 while True:
-    print("Pokemon")
-    print("1) Load Save Data\n2) Start New Game\n")
-    ginput()
+    name = input("What is your name: ").strip()
+    if name:  # Make sure they entered something
+        confirm = ginput(f"Are you sure you want to be called '{name}'? (y/n): ", "y", "n")
+        if confirm == "y":
+            break
+
+# Main menu
+new_scene()
+log_print("Pokemon")
+log_print("1) Load Save Data")
+log_print("2) Start New Game")
+
+choice = ginput("Choose an option: ", "1", "2")
+
+if choice == "1":
+    log_print("Loading game...")
+    # load_game() 
+else:
+    # Loading animation for starting new game
+    for _ in range(2):
+        for dots in ["", ".", "..", "..."]:
+            log_print(f"Starting new game{dots}")
+            time.sleep(0.5)
+            clear_screen()
+    text(f"Welcome to Pokémon: Budget Edition, {name}")
+    clear_screen()
+
+# Show starter Pokémon in current scene
+for pokemon_id in starter_pokemon:
+    log_print(f"Starter Pokémon ID: {pokemon_id}")
