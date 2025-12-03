@@ -1,8 +1,7 @@
 # DL 1st, final project 
 
-"""
-IMPORTANT - Game is probably in multiple files, the pokemon and items are in other files, make sure you have all the files needed with the correct naming. 
-"""
+
+# add sound, remove globals, fix asciis
 
 import time
 import random
@@ -28,7 +27,10 @@ def new_scene():
     global captured_output, current_scene_log
     captured_output = StringIO()
     current_scene_log = []
-    clear_screen()
+    if os.name == 'nt':  # Windows
+        os.system('cls')
+    else:  # macOS / Linux
+        os.system('clear')
 
 def restore_scene():
     """Restore the current scene to terminal."""
@@ -51,6 +53,18 @@ def text(message, delay=0.05):
             time.sleep(delay)
     current_scene_log.append(message)
 
+title_ascii = """ /$$$$$$$           /$$                                                   /$$$$$$$                  /$$                       /$$           /$$$$$$$$       /$$ /$$   /$$     /$$                    
+| $$__  $$         | $$                                                  | $$__  $$                | $$                      | $$          | $$_____/      | $$|__/  | $$    |__/                    
+| $$  \\ $$ /$$$$$$ | $$   /$$ /$$$$$$/$$$$   /$$$$$$  /$$$$$$$  /$$      | $$  \\ $$ /$$   /$$  /$$$$$$$  /$$$$$$   /$$$$$$  /$$$$$$        | $$        /$$$$$$$ /$$ /$$$$$$   /$$  /$$$$$$  /$$$$$$$ 
+| $$$$$$$//$$__  $$| $$  /$$/| $$_  $$_  $$ /$$__  $$| $$__  $$|__/      | $$$$$$$ | $$  | $$ /$$__  $$ /$$__  $$ /$$__  $$|_  $$_/        | $$$$$    /$$__  $$| $$|_  $$_/  | $$ /$$__  $$| $$__  $$
+| $$____/| $$  \\ $$| $$$$$$/ | $$ \\ $$ \\ $$| $$  \\ $$| $$  \\ $$          | $$__  $$| $$  | $$| $$  | $$| $$  \\ $$| $$$$$$$$  | $$          | $$__/   | $$  | $$| $$  | $$    | $$| $$  \\ $$| $$  \\ $$
+| $$     | $$  | $$| $$_  $$ | $$ | $$ | $$| $$  | $$| $$  | $$ /$$      | $$  \\ $$| $$  | $$| $$  | $$| $$  | $$| $$_____/  | $$ /$$      | $$      | $$  | $$| $$  | $$ /$$| $$| $$  | $$| $$  | $$
+| $$     |  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$/| $$  | $$|__/      | $$$$$$$/|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$  |  $$$$/      | $$$$$$$$|  $$$$$$$| $$  |  $$$$/| $$|  $$$$$$/| $$  | $$
+|__/      \\______/ |__/  \\__/|__/ |__/ |__/ \\______/ |__/  |__/          |_______/  \\______/  \\_______/ \\____  $$ \\_______/   \\___/        |________/ \\_______/|__/   \\___/  |__/ \\______/ |__/  |__/
+                                                                                                        /$$  \\ $$                                                                                    
+                                                                                                       |  $$$$$$/                                                                                    
+                                                                                                        \\______/                                                                                     """
+
 
 # list of all pokemon, type, names, evolution/s, pokedex number
 original_pokemon_data = {
@@ -62,9 +76,9 @@ original_pokemon_data = {
         "base_defense": 5,
         "base_speed": 7,
         "evolutions": [{"to":"Charmeleon","level":16}],
-        "ascii_battle": "LARGE ASCII HERE",
-        "ascii_small": "SMALL ASCII HERE",
-        "ascii_silhouette": "SILHOUETTE HERE",
+        "ascii_battle": "LARGE ASCII HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
+        "ascii_small": "SMALL ASCII HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
+        "ascii_silhouette": "SILHOUETTE HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
         "pokedex_id": "1",
         "possible_moves": ["Scratch","Ember","Flamethrower"]
     },
@@ -76,9 +90,9 @@ original_pokemon_data = {
         "base_defense": 6,
         "base_speed": 6,
         "evolutions": [{"to":"Ivysaur","level":16}],
-        "ascii_battle": "LARGE ASCII HERE",
-        "ascii_small": "SMALL ASCII HERE",
-        "ascii_silhouette": "SILHOUETTE HERE",
+        "ascii_battle": "LARGE ASCII HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
+        "ascii_small": "SMALL ASCII HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
+        "ascii_silhouette": "SILHOUETTE HERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it)",
         "pokedex_id": "2", #placeholders, not real ids
         "possible_moves": ["Tackle","Vine Whip","Growl"]
     }
@@ -271,7 +285,7 @@ def player_turn(cur_player_bat, cur_op_bat):
 # define enter_city function:
 #   - show city name + description
 #   - give list of places: shops, healing center, gym, special area, NPC interactions
-#   - player chooses where to go
+#   - player chooses wHERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it) to go
 
 # define city_location function (generic):
 #   - for forests, caves, haunted houses, beaches, etc.
@@ -384,13 +398,33 @@ if choice == "1":
 else:
     # Loading animation for starting new game
     for _ in range(2):
+        new_scene()
         for dots in ["", ".", "..", "..."]:
-            log_print(f"Starting new game{dots}")
+            print(f"Starting new game{dots}")
             time.sleep(0.5)
-            clear_screen()
-    text(f"Welcome to Pokémon: Budget Edition, {name}")
-    clear_screen()
+            new_scene()
+    print(title_ascii)
+    time.sleep(2)
 
 # Show starter Pokémon in current scene
-for pokemon_id in starter_pokemon:
-    log_print(f"Starter Pokémon ID: {pokemon_id}")
+start_pok_names = []
+start_pok_ascii = []
+start_pok_stats = []
+for pokemon in starter_pokemon:
+    start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
+    start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
+    start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
+    chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
+player_pokemon.append(original_pokemon_data[chosen_starter])
+new_scene()
+text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
+text("Now Lets Teach You The Basics")
+time.sleep(2)
+new_scene()
+text("First, at any point in the game, if there is an input, then if you type 'p', it will open the pause menu. Maybe try it after the instructions.")
+time.sleep(2)
+new_scene()
+text("If you ever want to save your game, you can do so in the pause menu, or if you ever want to load a save, you can do so in the pause menu.")
+time.sleep(2)
+new_scene()
+text("Now, lets teach you the battle functions.")
