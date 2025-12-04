@@ -9,27 +9,23 @@ from urllib.parse import urljoin
 from tqdm import tqdm
 import logging
 
-# ----------------- CONFIG -----------------
 OUTPUT_FILE = "pokemon_database_all.json"
-IMAGE_DIR = "pokemon_images_db"         # set to None to skip saving images
+IMAGE_DIR = "pokemon_images_db" 
 SMALL_WIDTH = 40
 LARGE_WIDTH = 100
-REQUEST_DELAY = 0.65    # seconds between requests (be polite; adjust if you hit rate limits)
+REQUEST_DELAY = 0.65 
 USE_OFFICIAL_ARTWORK = True
-MAX_POKEMON = None      # set to an int to limit for testing; None = all
+MAX_POKEMON = None  
 LOG_LEVEL = logging.INFO
-# ------------------------------------------
 
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s: %(message)s")
 
 API_BASE = "https://pokeapi.co/api/v2/"
 POKEMON_LIST_ENDPOINT = urljoin(API_BASE, "pokemon?limit=100000&offset=0")
 
-# Ensure image dir
 if IMAGE_DIR:
     os.makedirs(IMAGE_DIR, exist_ok=True)
 
-# Session with retries
 session = requests.Session()
 retries = Retry(total=5, backoff_factor=1, status_forcelist=(429, 500, 502, 503, 504))
 session.mount("https://", HTTPAdapter(max_retries=retries))
@@ -42,7 +38,6 @@ def safe_get(url):
     try:
         r = session.get(url, timeout=30)
         r.raise_for_status()
-        # try to parse JSON safely
         content_type = r.headers.get("Content-Type", "")
         if "application/json" in content_type:
             return r.json()
@@ -69,7 +64,6 @@ def download_image(url, name):
         r = session.get(url, stream=True, timeout=30)
         r.raise_for_status()
         if not IMAGE_DIR:
-            # If not saving images, write to temp file and return path
             path = f"/tmp/{name}.png"
         else:
             path = os.path.join(IMAGE_DIR, f"{name}.png")
@@ -100,8 +94,6 @@ def parse_evolution_chain(chain_obj):
     def walk(node, from_species=None):
         species_name = node['species']['name'].capitalize()
         if from_species:
-            # node contains how it evolves from from_species
-            # Each 'evolution_details' entry contains triggers, items, min_level, etc.
             for detail in node.get('evolution_details', []):
                 readable = {
                     'trigger': detail.get('trigger', {}).get('name') if isinstance(detail.get('trigger'), dict) else detail.get('trigger'),
@@ -118,11 +110,9 @@ def parse_evolution_chain(chain_obj):
                     'to': species_name,
                     'details': readable
                 })
-        # recurse for evolves_to
         for child in node.get('evolves_to', []):
             walk(child, species_name)
 
-    # the top-level chain root contains 'species' and 'evolves_to'
     walk(chain_obj, from_species=None)
     return evo_list
 
@@ -132,32 +122,26 @@ def get_pokemon_data(pokemon_resource):
     fetches pokemon endpoint, species endpoint, evolution chain, artwork, moves, stats, etc.
     Returns a dict ready to be JSON-serializable.
     """
-    name = pokemon_resource['name']  # lowercase as in API
-    # endpoints
+    name = pokemon_resource['name'] 
     pokemon_url = pokemon_resource['url']  # e.g. https://pokeapi.co/api/v2/pokemon/1/
-    # fetch pokemon
     poke = safe_get(pokemon_url)
     time.sleep(REQUEST_DELAY)
     if not poke:
         logging.warning(f"Skipping {name}: failed to fetch pokemon endpoint.")
         return None
 
-    # fetch species
     species_url = poke.get('species', {}).get('url')
     species = safe_get(species_url) if species_url else None
     time.sleep(REQUEST_DELAY)
 
-    # basic info
     display_name = poke.get('name', name).capitalize()
     pokedex_number = poke.get('id')
     types = [t['type']['name'].capitalize() for t in poke.get('types', [])]
 
-    # stats mapping: poke['stats'] is an array; map by 'stat' name to base_stat
     stat_map = {}
     for s in poke.get('stats', []):
         stat_name = s['stat']['name']
         base = s['base_stat']
-        # normalize names
         if stat_name == 'hp':
             stat_map['hp'] = base
         elif stat_name == 'attack':
@@ -171,7 +155,6 @@ def get_pokemon_data(pokemon_resource):
         elif stat_name == 'speed':
             stat_map['speed'] = base
 
-    # abilities
     abilities = []
     for a in poke.get('abilities', []):
         ability_name = a['ability']['name']
@@ -181,7 +164,6 @@ def get_pokemon_data(pokemon_resource):
             'slot': a.get('slot')
         })
 
-    # moves: expand each move with version_group_details (may be multiple entries)
     moves = []
     for m in poke.get('moves', []):
         move_obj = {'move_name': m['move']['name'].replace('-', ' ').title(), 'details': []}
@@ -196,7 +178,6 @@ def get_pokemon_data(pokemon_resource):
             })
         moves.append(move_obj)
 
-    # get flavor text (english) - species contains flavor_text_entries
     description = "N/A"
     if species:
         entries = species.get('flavor_text_entries', [])
@@ -205,13 +186,11 @@ def get_pokemon_data(pokemon_resource):
                 description = entry.get('flavor_text', '').replace('\n', ' ').replace('\x0c', ' ').strip()
                 break
 
-    # get catch rate & base experience & growth_rate
     catch_rate = None
     base_exp = poke.get('base_experience')
     if species:
         catch_rate = species.get('capture_rate')
 
-    # evolution chain parsing
     evolution_details = []
     if species and species.get('evolution_chain', {}).get('url'):
         evo_url = species['evolution_chain']['url']
@@ -221,14 +200,12 @@ def get_pokemon_data(pokemon_resource):
             evo_list = parse_evolution_chain(evo_resp['chain'])
             evolution_details = evo_list
 
-    # pick best artwork: official-artwork front_default if available, else sprite front_default
     image_url = None
     if USE_OFFICIAL_ARTWORK:
         image_url = poke.get('sprites', {}).get('other', {}).get('official-artwork', {}).get('front_default')
     if not image_url:
         image_url = poke.get('sprites', {}).get('front_default')
 
-    # download & ascii convert
     small_ascii = ""
     large_ascii = ""
     image_path = None
@@ -238,14 +215,12 @@ def get_pokemon_data(pokemon_resource):
         if image_path:
             small_ascii = convert_image_to_ascii(image_path, SMALL_WIDTH)
             large_ascii = convert_image_to_ascii(image_path, LARGE_WIDTH)
-            # optionally keep or remove image files
             if not IMAGE_DIR:
                 try:
                     os.remove(image_path)
                 except:
                     pass
 
-    # build the dict
     result = {
         'name': display_name,
         'pokedex_number': pokedex_number,
@@ -270,7 +245,6 @@ def main():
         resources = resources[:MAX_POKEMON]
     logging.info(f"Found {len(resources)} pokemon entries. Beginning processing...")
 
-    # iterate with progress bar
     for res in tqdm(resources, desc="Pokémon", unit="pkmn"):
         try:
             data = get_pokemon_data(res)
@@ -278,10 +252,7 @@ def main():
                 all_pokemon.append(data)
         except Exception as e:
             logging.exception(f"Unexpected error processing {res.get('name')}: {e}")
-        # small delay to keep things polite (already added between requests inside functions)
-        # time.sleep(REQUEST_DELAY)
 
-    # Save JSON
     logging.info(f"Saving {len(all_pokemon)} Pokémon to {OUTPUT_FILE} ...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as fh:
         json.dump(all_pokemon, fh, indent=2, ensure_ascii=False)

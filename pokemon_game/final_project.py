@@ -9,7 +9,12 @@ import os
 import sys
 from io import StringIO
 
-# with open(r"pokemon_game\saves.txt", "a") as f:
+script_dir = os.path.dirname(os.path.abspath(__file__))
+save_file_path = os.path.join(script_dir, 'saves.txt')
+with open(save_file_path, 'w') as file:
+        file.write("Hello")
+
+with open(r"pokemon_game\saves.txt", "a") as f:
   f.write("Now the file has more content!")
 
 # Variables:
@@ -416,12 +421,12 @@ input("\n\n\nenter any key to continue")
 start_pok_names = []
 start_pok_ascii = []
 start_pok_stats = []
-for pokemon in starter_pokemon:
-    start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
-    start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
-    start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
-    chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
-player_pokemon.append(original_pokemon_data[chosen_starter])
+#for pokemon in starter_pokemon:
+    #start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
+    #start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
+    #start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
+    #chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
+#player_pokemon.append(original_pokemon_data[chosen_starter])
 new_scene()
 text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
 text("Now lets give you some tips")
