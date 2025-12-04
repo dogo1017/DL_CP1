@@ -9,9 +9,10 @@ import os
 import sys
 from io import StringIO
 
+# with open(r"pokemon_game\saves.txt", "a") as f:
+  f.write("Now the file has more content!")
 
 # Variables:
-
 
 captured_output = StringIO()
 current_scene_log = []
@@ -53,17 +54,19 @@ def text(message, delay=0.05):
             time.sleep(delay)
     current_scene_log.append(message)
 
-title_ascii = """ /$$$$$$$           /$$                                                   /$$$$$$$                  /$$                       /$$           /$$$$$$$$       /$$ /$$   /$$     /$$                    
-| $$__  $$         | $$                                                  | $$__  $$                | $$                      | $$          | $$_____/      | $$|__/  | $$    |__/                    
-| $$  \\ $$ /$$$$$$ | $$   /$$ /$$$$$$/$$$$   /$$$$$$  /$$$$$$$  /$$      | $$  \\ $$ /$$   /$$  /$$$$$$$  /$$$$$$   /$$$$$$  /$$$$$$        | $$        /$$$$$$$ /$$ /$$$$$$   /$$  /$$$$$$  /$$$$$$$ 
-| $$$$$$$//$$__  $$| $$  /$$/| $$_  $$_  $$ /$$__  $$| $$__  $$|__/      | $$$$$$$ | $$  | $$ /$$__  $$ /$$__  $$ /$$__  $$|_  $$_/        | $$$$$    /$$__  $$| $$|_  $$_/  | $$ /$$__  $$| $$__  $$
-| $$____/| $$  \\ $$| $$$$$$/ | $$ \\ $$ \\ $$| $$  \\ $$| $$  \\ $$          | $$__  $$| $$  | $$| $$  | $$| $$  \\ $$| $$$$$$$$  | $$          | $$__/   | $$  | $$| $$  | $$    | $$| $$  \\ $$| $$  \\ $$
-| $$     | $$  | $$| $$_  $$ | $$ | $$ | $$| $$  | $$| $$  | $$ /$$      | $$  \\ $$| $$  | $$| $$  | $$| $$  | $$| $$_____/  | $$ /$$      | $$      | $$  | $$| $$  | $$ /$$| $$| $$  | $$| $$  | $$
-| $$     |  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$/| $$  | $$|__/      | $$$$$$$/|  $$$$$$/|  $$$$$$$|  $$$$$$$|  $$$$$$$  |  $$$$/      | $$$$$$$$|  $$$$$$$| $$  |  $$$$/| $$|  $$$$$$/| $$  | $$
-|__/      \\______/ |__/  \\__/|__/ |__/ |__/ \\______/ |__/  |__/          |_______/  \\______/  \\_______/ \\____  $$ \\_______/   \\___/        |________/ \\_______/|__/   \\___/  |__/ \\______/ |__/  |__/
-                                                                                                        /$$  \\ $$                                                                                    
-                                                                                                       |  $$$$$$/                                                                                    
-                                                                                                        \\______/                                                                                     """
+title_ascii = """ _____   ____  _  ________ __  __  ____  _   _                     
+|  __ \\ / __ \\| |/ /  ____|  \\/  |/ __ \\| \\ | |_                   
+| |__) | |  | | ' /| |__  | \\  / | |  | |  \\| (_)                  
+|  ___/| |  | |  < |  __| | |\\/| | |  | | . ` |                    
+| |    | |__| | . \\| |____| |  | | |__| | |\\  |_                   
+|_|     \\____/|_|\\_\\______|_| _|_|\\____/|_| \\_(_)_   _             
+| |             | |          | |            | (_) | (_)            
+| |__  _   _  __| | __ _  ___| |_    ___  __| |_| |_ _  ___  _ __  
+| '_ \\| | | |/ _` |/ _` |/ _ \\ __|  / _ \\/ _` | | __| |/ _ \\| '_ \\ 
+| |_) | |_| | (_| | (_| |  __/ |_  |  __/ (_| | | |_| | (_) | | | |
+|_.__/ \\__,_|\\__,_|\\__, |\\___|\\__|  \\___|\\__,_|_|\\__|_|\\___/|_| |_|
+                    __/ |                                          
+                   |___/                                           """
 
 
 # list of all pokemon, type, names, evolution/s, pokedex number
@@ -135,6 +138,7 @@ starter_pokemon = [1,2]
 #   - decode data back into components
 #   - reconstruct player's pokemon, inventory, progress, location
 #   - load world state and return to main menu
+
 
 
 
@@ -406,6 +410,8 @@ else:
     print(title_ascii)
     time.sleep(2)
 
+input("\n\n\nenter any key to continue")
+
 # Show starter Pokémon in current scene
 start_pok_names = []
 start_pok_ascii = []
@@ -418,7 +424,7 @@ for pokemon in starter_pokemon:
 player_pokemon.append(original_pokemon_data[chosen_starter])
 new_scene()
 text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
-text("Now Lets Teach You The Basics")
+text("Now lets give you some tips")
 time.sleep(2)
 new_scene()
 text("First, at any point in the game, if there is an input, then if you type 'p', it will open the pause menu. Maybe try it after the instructions.")
@@ -427,4 +433,9 @@ new_scene()
 text("If you ever want to save your game, you can do so in the pause menu, or if you ever want to load a save, you can do so in the pause menu.")
 time.sleep(2)
 new_scene()
-text("Now, lets teach you the battle functions.")
+text("There are also some really strong pokemon out there so be careful, but they could also make you stronger, which may help you in finding and beating Mewtwo, one of the strongest and smartest pokemon out there, and also every pokemon trainers goal")
+time.sleep(2)
+new_scene()
+text("If you find and beat Mewtwo, then you would be considered one of if not the BEST pokemon trainers out there, so get out there, explore, and try to catch them all.")
+time.sleep(2)
+new_scene()
