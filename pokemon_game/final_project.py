@@ -1,7 +1,7 @@
 # DL 1st, final project 
 
 
-# add sound, remove globals, fix asciis
+# add sound, remove globals, fix asciis, Test
 
 import time
 import random
