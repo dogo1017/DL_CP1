@@ -9,13 +9,13 @@ import os
 import sys
 from io import StringIO
 
+
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 save_file_path = os.path.join(script_dir, 'saves.txt')
-with open(save_file_path, 'w') as file:
-        file.write("Hello")
+#with open(save_file_path, 'w') as file:
+#        file.write("Hello")
 
-with open(r"pokemon_game\saves.txt", "a") as f:
-  f.write("Now the file has more content!")
 
 # Variables:
 
@@ -127,6 +127,8 @@ player_pokemon = {
 starter_pokemon = [1,2]
 
 # list of all items, the stats they change, and time (e.g. health, 1, 5.0, extra info or abilities)
+
+# list of all NPCs and interaction options
 
 # LOAD SAVE
 
@@ -248,10 +250,14 @@ def player_turn(cur_player_bat, cur_op_bat):
     ginput()
 
 
+
 # define op_turn function:  # gym leaders & trainers
 #   - choose strongest or random move
 #   - small chance to use healing item
 #   - switch pokemon if low HP
+def op_turn():
+    "hello"
+
 
 # define pok_turn function: # wild pokemon
 #   - choose random available move
@@ -270,6 +276,20 @@ def player_turn(cur_player_bat, cur_op_bat):
 #       - player_turn
 #       - if enemy alive: op_turn or pok_turn
 #   - award exp, items, money if player wins
+
+def battle(player_party, op_status, op_type):
+    while True:
+        if player_party == "alive" and op_status == "alive":
+            player_turn()
+            if op_type == "gym leader" or op_type == "trainer":
+                op_turn()
+            else:
+                pok_turn()
+        elif player_party == "down":
+            player_loose()
+        elif op_status == "down":
+            player_win()
+
 
 
 
@@ -294,7 +314,7 @@ def player_turn(cur_player_bat, cur_op_bat):
 # define enter_city function:
 #   - show city name + description
 #   - give list of places: shops, healing center, gym, special area, NPC interactions
-#   - player chooses wHERE (If you are seeing this message than the ascii cannot be found, either fix the problem, or continue playing wihtout it) to go
+#   - player chooses where to go
 
 # define city_location function (generic):
 #   - for forests, caves, haunted houses, beaches, etc.
@@ -372,7 +392,6 @@ def player_turn(cur_player_bat, cur_op_bat):
 #   - used for endgame, unlock mew area, etc.
 
 
-
 # MAIN GAME LOOP
 
 # while True:
@@ -403,7 +422,19 @@ choice = ginput("Choose an option: ", "1", "2")
 
 if choice == "1":
     log_print("Loading game...")
-    # load_game() 
+    # open saves.txt file
+    try:
+        open("pokemon_game/saves.txt"):
+        print("found")
+    except FileNotFoundError:
+        print("not found")
+    # search for names
+    # print names to choose from
+    # choose which one to load with timestamps
+    # overide the current save data with load data
+    # give options to return throughout interaction
+    # give option to input own throughout interaction
+    
 else:
     # Loading animation for starting new game
     for _ in range(2):
@@ -444,3 +475,6 @@ new_scene()
 text("If you find and beat Mewtwo, then you would be considered one of if not the BEST pokemon trainers out there, so get out there, explore, and try to catch them all.")
 time.sleep(2)
 new_scene()
+text("Alright lets get you into your first battle.")
+new_scene()
+battle()
