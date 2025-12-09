@@ -246,8 +246,7 @@ def open_inv():
 #   - return chosen action
 
 def player_turn(cur_player_bat, cur_op_bat):
-    log_print("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
-    ginput()
+    ginput("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
 
 
 
@@ -301,7 +300,8 @@ def battle(player_party, op_status, op_type):
 #   - boosted stats for mew
 #   - no running allowed
 #   - if win: unlock endgame screen
-
+def mew_battle():
+    text("You Found Mewto")
 # define rare_legendary_encounter:
 #   - very low chance during area exploration
 #   - unique catch difficulty and moves
@@ -424,7 +424,7 @@ if choice == "1":
     log_print("Loading game...")
     # open saves.txt file
     try:
-        open("pokemon_game/saves.txt"):
+        open("pokemon_game/saves.txt")
         print("found")
     except FileNotFoundError:
         print("not found")
@@ -441,13 +441,13 @@ else:
         new_scene()
         for dots in ["", ".", "..", "..."]:
             print(f"Starting new game{dots}")
-            time.sleep(0.5)
+            time.sleep(0.4)
             new_scene()
     print(title_ascii)
     time.sleep(2)
 
 input("\n\n\nenter any key to continue")
-
+new_scene()
 # Show starter Pokémon in current scene
 start_pok_names = []
 start_pok_ascii = []
@@ -456,8 +456,8 @@ start_pok_stats = []
     #start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
     #start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
     #start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
-    #chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
-#player_pokemon.append(original_pokemon_data[chosen_starter])
+chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
+player_pokemon.append(original_pokemon_data[chosen_starter])
 new_scene()
 text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
 text("Now lets give you some tips")
@@ -478,3 +478,7 @@ new_scene()
 text("Alright lets get you into your first battle.")
 new_scene()
 battle()
+
+
+
+
