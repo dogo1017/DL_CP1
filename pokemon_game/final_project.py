@@ -156,11 +156,10 @@ starter_pokemon = [1,2]
 #   - clears screen
 
 def pause_menu():
-    new_scene()
-    log_print("PAUSE MENU")
-    log_print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
+    clear_screen()
+    print("PAUSE MENU")
+    print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
     choice = ginput("Choose an option: ", "1","2","3","4","5","6")
-    # placeholder logic for pause menu actions
     if choice == "6":
         restore_scene()
     else:
@@ -456,7 +455,7 @@ start_pok_stats = []
     #start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
     #start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
     #start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
-chosen_starter = ginput(f"Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n\n{"hello"}", *starter_pokemon)
+chosen_starter = ginput(text(Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n, *starter_pokemon)
 player_pokemon.append(original_pokemon_data[chosen_starter])
 new_scene()
 text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
