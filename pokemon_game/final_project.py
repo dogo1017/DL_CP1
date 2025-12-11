@@ -22,6 +22,13 @@ save_file_path = os.path.join(script_dir, 'saves.txt')
 captured_output = StringIO()
 current_scene_log = []
 
+def index_of_lists(list):
+    indexes = []
+    for i in list:
+
+        indexes.append(list.index(i)+1)
+    return indexes
+
 def clear_screen():
     if os.name == 'nt':  # Windows
         os.system('cls')
@@ -49,7 +56,7 @@ def log_print(message):
     print(message)
     current_scene_log.append(message)
 
-def text(message, delay=0.05):
+def text(message, delay=0.02):
     """Typewriter effect, live printing, saves to scene log."""
     for i, char in enumerate(message):
         if i == len(message) - 1:
@@ -243,6 +250,8 @@ def ginput(prompt, *val_opts):
 def open_inv():
     new_scene()
     log_print("1) Potions\n2) Party\n")
+
+player_inv = []
 
 
 # define use_item function:
@@ -500,6 +509,7 @@ while True:
         confirm = ginput(f"Are you sure you want to be called '{name}'? (y/n): ", "y", "n")
         if confirm == "y":
             break
+new_scene()
 
 # Main menu
 new_scene()
@@ -556,7 +566,7 @@ for i, species in enumerate(starter_pokemon, start=1):
     log_print("")  # blank line
 
 choice_temp = i in enumerate(starter_pokemon)
-choice = ginput("Choose your starter: ", {i in starter_pokemon})
+choice = ginput("Choose your starter: ", 1,2)
 starter_species = starter_pokemon[int(choice)-1]
 
 player_pokemon = {
@@ -577,7 +587,7 @@ player_pokemon = {
 }
 
 new_scene()
-text(f"Nice choice! {original_pokemon_data[choice]} is a great pokemon.")
+text(f"Nice choice! {starter_pokemon[choice-1]} is a great pokemon.")
 text("Now lets give you some tips")
 time.sleep(2)
 new_scene()
