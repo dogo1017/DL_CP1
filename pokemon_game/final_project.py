@@ -74,6 +74,14 @@ title_ascii = """ _____   ____  _  ________ __  __  ____  _   _
                    |___/                                           """
 
 
+discovered_locations = {
+    "Pallet Town": True,  # always starts discovered
+    "Route 1": False,
+    "Viridian City": False,
+    "Route 2": False,
+    "Pewter City": False,
+}
+
 # list of all pokemon, type, names, evolution/s, pokedex number
 original_pokemon_data = {
     "Charmander": {
@@ -106,6 +114,14 @@ original_pokemon_data = {
     }
 }
 
+moves_data = {
+    "Scratch": {"power": 5},
+    "Ember": {"power": 7},
+    "Tackle": {"power": 5},
+    "Vine Whip": {"power": 7},
+}
+
+
 # list of pokemon player owns, current moves, and stats
 player_pokemon = {
     1: {
@@ -124,7 +140,7 @@ player_pokemon = {
     }
 }
 
-starter_pokemon = [1,2]
+starter_pokemon = ["Charmander", "Bulbasaur"]
 
 # list of all items, the stats they change, and time (e.g. health, 1, 5.0, extra info or abilities)
 
@@ -162,10 +178,24 @@ def pause_menu():
     choice = ginput("Choose an option: ", "1","2","3","4","5","6")
     if choice == "6":
         restore_scene()
+    elif choice == "5":
+        show_map()
     else:
         log_print(f"Option {choice} selected. (Feature not implemented yet)")
         time.sleep(1)
         restore_scene()
+
+def show_map():
+    new_scene()
+    log_print("MAP")
+    for loc, discovered in discovered_locations.items():
+        if discovered:
+            log_print(f"- {loc}")
+        else:
+            log_print("- ???") 
+    log_print("\nPress any key to return")
+    input()
+    restore_scene()
 
 
 # define ginput function:
@@ -244,10 +274,6 @@ def open_inv():
 #   - use isopt to validate
 #   - return chosen action
 
-def player_turn(cur_player_bat, cur_op_bat):
-    ginput("1) Attack\n2) Items\n3) Switch\n4) Bonus Abilities")
-
-
 
 # define op_turn function:  # gym leaders & trainers
 #   - choose strongest or random move
@@ -269,26 +295,90 @@ def op_turn():
 # define run_attempt function:
 #   - calculate run success based on speed difference
 
+def get_active_pokemon(player_party):
+    for slot, p in player_party.items():
+        if p["hp"] > 0:
+            return slot, p
+    return None, None  # all fainted
+
+
+def is_party_alive(player_party):
+    for p in player_party.values():
+        if p["hp"] > 0:
+            return True
+    return False
+
+def deal_damage(attacker, defender, move_name):
+    move = moves_data[move_name]
+    power = move["power"]
+
+    # basic formula you can expand later
+    dmg = max(1, (attacker["atk"] + power) - defender["defense"])
+
+    defender["hp"] -= dmg
+    if defender["hp"] < 0:
+        defender["hp"] = 0
+
+    log_print(f"{attacker['nickname']} used {move_name}! It dealt {dmg} damage!")
+
+def player_turn(active_player, active_opponent):
+    log_print("\nYour turn!")
+    log_print("Choose a move:")
+
+    for i, mv in enumerate(active_player["moves"], start=1):
+        log_print(f"{i}) {mv}")
+
+    choice = ginput("Move: ", *[str(i) for i in range(1, len(active_player["moves"])+1)])
+    chosen_move = active_player["moves"][int(choice)-1]
+
+    deal_damage(active_player, active_opponent, chosen_move)
+
+def pok_turn(active_player, active_opponent):
+    move = random.choice(active_opponent["moves"])
+    log_print("\nEnemy turn!")
+    deal_damage(active_opponent, active_player, move)
+
+
 # define battle function:
 #   - while both sides have usable pokemon:
 #       - player_turn
 #       - if enemy alive: op_turn or pok_turn
 #   - award exp, items, money if player wins
 
-def battle(player_party, op_status, op_type):
+def battle(player_party, enemy_data, enemy_type="wild"):
+
+    enemy = enemy_data.copy()
+    enemy["nickname"] = enemy["name"]
+    enemy["max_hp"] = enemy["hp"]
+
+    if "moves" not in enemy:
+        enemy["moves"] = ["Tackle"]
+
+    log_print(f"A {enemy['name']} appeared!\n")
+
     while True:
-        if player_party == "alive" and op_status == "alive":
-            player_turn()
-            if op_type == "gym leader" or op_type == "trainer":
-                op_turn()
-            else:
-                pok_turn()
-        elif player_party == "down":
-            player_loose()
-        elif op_status == "down":
-            player_win()
+        slot, active_player = get_active_pokemon(player_party)
+        if active_player is None:
+            log_print("All your Pokémon fainted!")
+            return "lose"
 
+        if enemy["hp"] <= 0:
+            log_print(f"You defeated {enemy['name']}!")
+            return "win"
 
+        player_turn(active_player, enemy)
+
+        if enemy["hp"] <= 0:
+            log_print(f"You defeated {enemy['name']}!")
+            return "win"
+
+        pok_turn(active_player, enemy)
+
+        if active_player["hp"] <= 0:
+            log_print(f"{active_player['nickname']} fainted!\n")
+            if not is_party_alive(player_party):
+                log_print("All your Pokémon fainted!")
+                return "lose"
 
 
 # LEGENDARY & SPECIAL BATTLES
@@ -451,14 +541,43 @@ new_scene()
 start_pok_names = []
 start_pok_ascii = []
 start_pok_stats = []
-#for pokemon in starter_pokemon:
-    #start_pok_names.append(original_pokemon_data[starter_pokemon[pokemon]][name])
-    #start_pok_ascii.append(original_pokemon_data[starter_pokemon[pokemon]][ascii_battle])
-    #start_pok_stats.append(original_pokemon_data[starter_pokemon[pokemon]][stats])
-chosen_starter = ginput(text(Welcome {name}, Before you start your adventure, we should get you your starter pokemon:\n, *starter_pokemon)
-player_pokemon.append(original_pokemon_data[chosen_starter])
+for species in starter_pokemon:
+    data = original_pokemon_data[species]
+
 new_scene()
-text(f"Nice choice! {original_pokemon_data[chosen_starter]} is a great pokemon.")
+text(f"Welcome {name}, before you start your adventure, choose your starter Pokémon:\n")
+time.sleep(1)
+
+for i, species in enumerate(starter_pokemon, start=1):
+    data = original_pokemon_data[species]
+    log_print(f"{i}) {species}")
+    log_print(f"   Type: {', '.join(data['type'])}")
+    log_print(f"   HP: {data['base_hp']}  ATK: {data['base_atk']}  DEF: {data['base_defense']}  SPD: {data['base_speed']}")
+    log_print("")  # blank line
+
+choice_temp = i in enumerate(starter_pokemon)
+choice = ginput("Choose your starter: ", {i in starter_pokemon})
+starter_species = starter_pokemon[int(choice)-1]
+
+player_pokemon = {
+    1: {
+        "nickname": starter_species,
+        "species_name": starter_species,
+        "level": 5,
+        "type": original_pokemon_data[starter_species]["type"],
+        "hp": original_pokemon_data[starter_species]["base_hp"],
+        "max_hp": original_pokemon_data[starter_species]["base_hp"],
+        "atk": original_pokemon_data[starter_species]["base_atk"],
+        "defense": original_pokemon_data[starter_species]["base_defense"],
+        "speed": original_pokemon_data[starter_species]["base_speed"],
+        "moves": original_pokemon_data[starter_species]["possible_moves"][:2],
+        "gender": "male",
+        "pokedex_inv_id": 1
+    }
+}
+
+new_scene()
+text(f"Nice choice! {original_pokemon_data[choice]} is a great pokemon.")
 text("Now lets give you some tips")
 time.sleep(2)
 new_scene()
@@ -476,8 +595,14 @@ time.sleep(2)
 new_scene()
 text("Alright lets get you into your first battle.")
 new_scene()
-battle()
+enemy_pokemon = {
+    "name": "Wild Bunnip",
+    "hp": 18,
+    "attack": 4,
+    "defense": 2
+}
+battle(player_pokemon, enemy_pokemon, "wild")
 
-
-
-
+text("Well now that you have won your first fight, it is time for you to head out to the first town, so get out there and enjoy yourself!")
+time.sleep(1)
+new_scene()
