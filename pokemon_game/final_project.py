@@ -2,6 +2,33 @@
 
 
 # add sound, remove globals, fix asciis, Test
+import json
+import os
+
+file_name = 'pokemon_database_db.json'
+
+# Get the absolute path to the file if it's in the same directory as the script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, file_name)
+
+try:
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+
+        print("--- Data as a Python object ---")
+        print(data)
+        print("-" * 40)
+
+        print("--- Formatted JSON Output ---")
+        print(json.dumps(data, indent=4))
+        print("-" * 40)
+
+except FileNotFoundError:
+    print(f"Error: The file '{file_name}' was not found at {file_path}")
+except json.JSONDecodeError:
+    print(f"Error: Could not decode JSON from the file '{file_name}'. Check file integrity.")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
 
 import time
 import random
@@ -9,7 +36,7 @@ import os
 import sys
 from io import StringIO
 
-
+print
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 save_file_path = os.path.join(script_dir, 'saves.txt')
