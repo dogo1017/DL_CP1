@@ -40,6 +40,8 @@ print
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 save_file_path = os.path.join(script_dir, 'saves.txt')
+#script_dir = os.path.dirname(os.path.abspath(__file__))
+#save_file_path = os.path.join(script_dir, 'saves.txt')
 #with open(save_file_path, 'w') as file:
 #        file.write("Hello")
 
