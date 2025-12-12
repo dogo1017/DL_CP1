@@ -4,10 +4,14 @@
 # add sound, remove globals, fix asciis, Test
 import json
 import os
+import time
+import random
+import sys
+from io import StringIO
 
+"""
 file_name = 'pokemon_database_db.json'
 
-# Get the absolute path to the file if it's in the same directory as the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(script_dir, file_name)
 
@@ -29,17 +33,7 @@ except json.JSONDecodeError:
     print(f"Error: Could not decode JSON from the file '{file_name}'. Check file integrity.")
 except Exception as e:
     print(f"An unexpected error occurred: {e}")
-
-import time
-import random
-import os
-import sys
-from io import StringIO
-
-print
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-save_file_path = os.path.join(script_dir, 'saves.txt')
+"""
 #script_dir = os.path.dirname(os.path.abspath(__file__))
 #save_file_path = os.path.join(script_dir, 'saves.txt')
 #with open(save_file_path, 'w') as file:
@@ -179,7 +173,14 @@ player_pokemon = {
 starter_pokemon = ["Charmander", "Bulbasaur"]
 
 # list of all items, the stats they change, and time (e.g. health, 1, 5.0, extra info or abilities)
-
+items = {
+    "health_pot": {
+        "stat": "health",
+        "target": "curr_pokemon",
+        "value": 20,
+        "sale_price": 10
+    }
+}
 # list of all NPCs and interaction options
 
 # LOAD SAVE
@@ -207,7 +208,7 @@ starter_pokemon = ["Charmander", "Bulbasaur"]
 #   - empties the current save of teminal output in variable
 #   - clears screen
 
-def pause_menu():
+def pause_menu(player_pokemon, original_pokemon_data):
     clear_screen()
     print("PAUSE MENU")
     print("1) LOAD\n2) SAVE\n3) INVENTORY\n4) POKEDEX\n5) MAP\n6) RETURN")
@@ -216,6 +217,10 @@ def pause_menu():
         restore_scene()
     elif choice == "5":
         show_map()
+    elif choice == "4":
+        open_pokedex(player_pokemon, original_pokemon_data)
+    elif choice == "3":
+        open_inv()
     else:
         log_print(f"Option {choice} selected. (Feature not implemented yet)")
         time.sleep(1)
@@ -238,12 +243,37 @@ def show_map():
 #   - take input and list of valid options
 #   - if input == 'p': open pause_menu
 #   - otherwise return valid option
+def pinput(prompt, *val_opts):
+    while True:
+        user_input = input(prompt).strip()
+        
+        # Check if input matches a valid option (as string)
+        if user_input in val_opts:
+            return user_input
+        
+        # Try int
+        try:
+            int_val = int(user_input)
+            if int_val in val_opts:
+                return int_val
+        except ValueError:
+            pass
+
+        # Try float
+        try:
+            float_val = float(user_input)
+            if float_val in val_opts:
+                return float_val
+        except ValueError:
+            pass
+
+        log_print(f"Invalid input: '{user_input}'. Please choose from {val_opts}.")
 
 def ginput(prompt, *val_opts):
     while True:
         user_input = input(prompt).strip()
         if user_input.lower() == "p":
-            pause_menu()
+            pause_menu(player_pokemon, original_pokemon_data)
             continue
         
         # Check if input matches a valid option (as string)
@@ -278,7 +308,7 @@ def ginput(prompt, *val_opts):
 
 def open_inv():
     new_scene()
-    log_print("1) Potions\n2) Party\n")
+    log_print(*player_inv)
 
 player_inv = []
 
@@ -289,6 +319,17 @@ player_inv = []
 # define open_party function:
 #   - show player's 6 pokemon
 #   - allow rearranging, swapping with storage
+
+def open_party(player_pokemon, player_party):
+    for i in player_party:
+        print(i)
+    temp_choice = ginput("OPTIONS:\n1) Edit Party\n2) Return", 1,2)
+    if temp_choice == 1:
+        count = 0
+        for i in player_party:
+            num += 1
+            print(f"{num}) {i}")
+
 
 # define pc_storage function:
 #   - store extra pokemon not in party
@@ -303,6 +344,24 @@ player_inv = []
 #   - show info if caught, silhouette if not
 #   - allow search by name or type
 
+def open_pokedex(player_pokemon,original_pokemon_data):
+    count = 0
+    for i in original_pokemon_data:
+        count += 1
+        print(i)
+    choice_temp = pinput("\nActions:\n1) Sort\n2) return")
+    if choice_temp == 1:
+        choice_temp = ginput("Options:\n1) Owned\n2) Not Owned\n3) Return", 1,2,3,4)
+        if choice_temp == 1:
+            print(player_pokemon)
+        elif choice_temp == 2:
+            for i in original_pokemon_data:
+                if i["name"] in player_pokemon:
+                    pass
+                else:
+                    print(i)
+        else:
+            clear_screen()
 
 # BATTLE SYSTEM
 
@@ -443,6 +502,33 @@ def mew_battle():
 #   - give list of places: shops, healing center, gym, special area, NPC interactions
 #   - player chooses where to go
 
+cities = {
+    "pallet_town":{
+        "shops":["pallet_town_1"],
+        "special_area": "fields"} 
+}
+
+special_areas = {
+    "fields": {
+        "pok_type": ["grass"],
+        "pokemon_lvl": 3
+    }
+} 
+def enter_city(city):
+    log_print(f"{city.upper()}\n----------\n")
+    for i in city:
+        print(special_area)
+        print(shops)
+
+shops = {
+    "pallet_town_1": {
+        "item_levels": 50, # max level of items sold
+        "refresh": 20, # in minutes
+        "curr_stock": ["health_pot"],
+        "type":"potions"
+    }
+}
+
 # define city_location function (generic):
 #   - for forests, caves, haunted houses, beaches, etc.
 #   - show area description
@@ -470,6 +556,7 @@ def mew_battle():
 #   - check if path is unlocked
 #   - if locked: show message
 #   - if unlocked: move player to next area
+
 
 # define route function:
 #   - traveling between cities
