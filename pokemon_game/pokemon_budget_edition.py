@@ -1497,8 +1497,9 @@ def explore_special_area(area_name):
     log_print(f"=== {area_name} ===")
     log_print("You explore the area...")
     time.sleep(1)
-    
     # Check for Mewtwo in Cerulean Cave
+    for i in range(10):
+        gym_badges.append("hi")
     if area.get("special") == "mewtwo_location" and len(gym_badges) >= 8:
         encounter = ginput("\nYou sense an incredibly powerful presence deeper in the cave...\nInvestigate? (y/n): ", "y", "n")
         if encounter == "y":
@@ -1603,7 +1604,7 @@ def enter_city(city_name):
         elif selected == "special":
             explore_special_area(city["special_area"])
         elif selected == "travel":
-            travel_menu()
+            travel_menu(city_name)
             # After travel_menu returns, we're in a new city or staying
             # Break out of this city's loop
             break
@@ -1813,7 +1814,7 @@ routes = {
     }
 }
 
-def travel_menu():
+def travel_menu(city_name):
     """Show available cities to travel to"""
     global current_location
     
@@ -1838,12 +1839,11 @@ def travel_menu():
         
         if int(choice) <= len(available_routes):
             route_name, destination = available_routes[int(choice)-1]
-            travel_route(route_name, destination)
+            travel_route(route_name, destination, city_name)
             # After travel_route, we're in new city, so return to caller
             return
         else:
-            # Stay here - return to city menu
-            return
+            enter_city(city_name)
 
 
 # define route function:
@@ -1852,7 +1852,7 @@ def travel_menu():
 #   - chance of finding trainers
 #   - chance of environmental events
 
-def travel_route(route_name, destination):
+def travel_route(route_name, destination, city_name):
     """Travel along a route with encounters"""
     global current_location, discovered_locations, defeated_trainers
     
@@ -1909,10 +1909,8 @@ def travel_route(route_name, destination):
                     elif result == "lose":
                         log_print("\nYou blacked out and returned to the Pokemon Center!")
                         heal_all_pokemon()
-                        # Stay at current location
-                        return
+                        enter_city(city_name)
                     
-                    # Resume progress bar
                     progress = int((i / route["distance"]) * 20)
                     bar = "=" * progress + " " * (20 - progress)
                     print(f"\r[{bar}] {i}/{route['distance']} km", end="", flush=True)
@@ -1941,7 +1939,6 @@ def travel_route(route_name, destination):
                 if result == "lose":
                     log_print("\nYou blacked out and returned to the Pokemon Center!")
                     heal_all_pokemon()
-                    # Stay at current location
                     return
                 
                 # Resume progress bar
@@ -1963,59 +1960,6 @@ def travel_route(route_name, destination):
 
 
 
-# HEALING CENTERS
-
-
-# define healing_center function:
-#   - heal all pokemon
-#   - restore PP
-#   - auto-rush trigger: 
-#       - if entire team HP < certain threshold, instantly teleport player to nearest center
-
-
-
-# ITEM SHOPS
-
-
-# define shop function:
-#   - display available items
-#   - show prices
-#   - confirm purchase
-#   - subtract money, add items to inventory
-
-# define stone_shop function:
-#   - sells evolution stones
-
-# define special_shop function:
-#   - sells TMs or rare goods
-
-
-
-# STORIES & WORLD EVENTS
-
-
-# define city_story_event function:
-#   - trigger when first entering a city
-#   - may involve NPCs, small quests, or unlocking gym
-
-# define global_story_event function:
-#   - triggers after major gym wins or milestones
-#   - used for endgame, unlock mew area, etc.
-
-
-# MAIN GAME LOOP
-
-# while True:
-#   - show main menu: new game, load game, credits, quit
-#   - if new game: choose starter pokemon
-#   - tutorial on battling
-#   - send player to first city
-#   - continue game through gym progression
-#   - after final gym, unlock mew area
-#   - after beating mew, show victory screen and option to keep playing
-
-
-# Ask player name
 while True:
     name = input("What is your name: ").strip()
     if name:  # Make sure they entered something
@@ -2027,36 +1971,39 @@ new_scene()
 # Main menu
 new_scene()
 log_print("Pokemon")
-log_print("1) Load Save Data")
-log_print("2) Start New Game")
+#log_print("1) Load Save Data")
+#log_print("2) Start New Game")
 
-choice = ginput("Choose an option: ", "1", "2")
+#choice = ginput("Choose an option: ", "1", "2")
 
-if choice == "1":
-    log_print("Loading game...")
-    # open saves.txt file
-    try:
-        open("pokemon_game/saves.txt")
-        print("found")
-    except FileNotFoundError:
-        print("not found")
-    # search for names
-    # print names to choose from
-    # choose which one to load with timestamps
-    # overide the current save data with load data
-    # give options to return throughout interaction
-    # give option to input own throughout interaction
+#if choice == "1":
+#    log_print("Loading game...")
+#    # open saves.txt file
+#    try:
+#        open("pokemon_game/saves.txt")
+#        print("found")
+#    except FileNotFoundError:
+#        print("not found")
+#    # search for names
+#    # print names to choose from
+#    # choose which one to load with timestamps
+#    # overide the current save data with load data
+#    # give options to return throughout interaction
+#    # give option to input own throughout interaction
     
-else:
-    # Loading animation for starting new game
-    for _ in range(2):
-        new_scene()
-        for dots in ["", ".", "..", "..."]:
-            print(f"Starting new game{dots}")
-            time.sleep(0.4)
-            new_scene()
-    print(title_ascii)
-    time.sleep(2)
+#else:
+#    # Loading animation for starting new game
+#    for _ in range(2):
+#        new_scene()
+#        for dots in ["", ".", "..", "..."]:
+#            print(f"Starting new game{dots}")
+#            time.sleep(0.4)
+#            new_scene()
+#    print(title_ascii)
+#    time.sleep(2)
+print(title_ascii)
+
+#    time.sleep(2)
 
 input("\n\n\nenter any key to continue")
 new_scene()
