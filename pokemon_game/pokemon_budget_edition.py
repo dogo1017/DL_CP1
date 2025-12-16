@@ -1,6 +1,8 @@
 # DL 1st, final project 
 
-# add sound, remove globals, fix asciis, Test
+# I am already sorry for the amount of pain you will probably go through trying to avoid bugs in this game but have fun I guess
+
+
 import json
 import os
 import time
@@ -833,32 +835,6 @@ items = {
         "description": "Evolves certain fire-type Pokemon"
     }
 }
-# list of all NPCs and interaction options
-
-# LOAD SAVE
-
-# define save_game function:
-#   - gather player pokemon IDs, joined by 'P'
-#   - gather item IDs, joined by 'I'
-#   - gather city progress flags, joined by 'C'
-#   - encode final string in simple cipher (shift letters, reverse, etc.)
-#   - write encoded save data to file
-#   - return back to pause menu
-
-# define load_game function:
-#   - read save file
-#   - decode data back into components
-#   - reconstruct player's pokemon, inventory, progress, location
-#   - load world state and return to main menu
-
-
-
-
-# PAUSE MENU + INPUT SYSTEM
-
-# define new_scene function:
-#   - empties the current save of teminal output in variable
-#   - clears screen
 
 def pause_menu(player_pokemon, original_pokemon_data):
     clear_screen()
@@ -1022,9 +998,6 @@ def use_item(item_name):
             log_print(f"{selected_poke['nickname']}'s Speed increased by {item_data['value']}!")
             player_inv.remove(item_name)
 
-# define open_party function:
-#   - show player's 6 pokemon
-#   - allow rearranging, swapping with storage
 
 def open_party(player_pokemon, player_party):
     for i in player_party:
@@ -1037,18 +1010,6 @@ def open_party(player_pokemon, player_party):
             print(f"{count}) {i}")
 
 
-# define pc_storage function:
-#   - store extra pokemon not in party
-
-
-
-# POKEDEX SYSTEM
-
-
-# define open_pokedex function:
-#   - display list of seen/caught pokemon
-#   - show info if caught, silhouette if not
-#   - allow search by name or type
 
 def open_pokedex(player_pokemon,original_pokemon_data):
     new_scene()
@@ -1072,34 +1033,9 @@ def open_pokedex(player_pokemon,original_pokemon_data):
     input()
     restore_scene()
 
-# BATTLE SYSTEM
-
-
-# define player_turn function:
-#   - options: attack, items, switch, run
-#   - use isopt to validate
-#   - return chosen action
-
-
-# define op_turn function:  # gym leaders & trainers
-#   - choose strongest or random move
-#   - small chance to use healing item
-#   - switch pokemon if low HP
 def op_turn():
     "hello"
 
-
-# define pok_turn function: # wild pokemon
-#   - choose random available move
-
-# define attack function:
-#   - check accuracy
-#   - determine type effectiveness multiplier
-#   - calculate damage based on stats + move power
-#   - apply damage and check faint
-
-# define run_attempt function:
-#   - calculate run success based on speed difference
 
 def get_active_pokemon(player_party):
     for slot, p in player_party.items():
@@ -1174,7 +1110,10 @@ def player_turn(active_player, active_opponent, is_wild=False):
             
             # Add to player pokemon
             new_slot = max(player_pokemon.keys()) + 1
-            player_pokemon[new_slot] = active_opponent.copy()
+            my_poke = active_opponent.copy()
+            my_poke['exp'] = 0
+            my_poke['exp_to_next'] = 100
+            player_pokemon[new_slot] = my_poke
             player_inv.remove("Pokeball")
             return "caught"
         else:
@@ -1196,12 +1135,6 @@ def pok_turn(active_player, active_opponent):
     log_print("\nEnemy turn!")
     deal_damage(active_opponent, active_player, move)
 
-
-# define battle function:
-#   - while both sides have usable pokemon:
-#       - player_turn
-#       - if enemy alive: op_turn or pok_turn
-#   - award exp, items, money if player wins
 
 def gain_exp(pokemon, amount):
     pokemon["exp"] += amount
@@ -1715,7 +1648,7 @@ def view_party():
         log_print(f"   Level: {poke['level']}")
         log_print(f"   HP: {poke['hp']}/{poke['max_hp']}")
         log_print(f"   ATK: {poke['atk']} | DEF: {poke['defense']} | SPD: {poke['speed']}")
-        log_print(f"   EXP: {poke.get('exp', 0)}/{poke['exp_to_next']}")
+        log_print(f"   EXP: {poke['exp']}/{poke['exp_to_next']}")
     
     log_print("\nPress any key to return")
     input()
@@ -1939,7 +1872,7 @@ def travel_route(route_name, destination, city_name):
                 if result == "lose":
                     log_print("\nYou blacked out and returned to the Pokemon Center!")
                     heal_all_pokemon()
-                    return
+                    enter_city(city_name)
                 
                 # Resume progress bar
                 progress = int((i / route["distance"]) * 20)
@@ -2014,21 +1947,67 @@ start_pok_stats = []
 for species in starter_pokemon:
     data = original_pokemon_data[species]
 
+text("=" * 60)
+text("WELCOME TO THE WORLD OF POKÉMON!")
+text("=" * 60)
+time.sleep(2)
 new_scene()
-text(f"Welcome {name}, before you start your adventure, choose your starter Pokémon:\n")
+text(f"Greetings, {name}. I am Professor Oak, the leading Pokémon")
+text("researcher in the Kanto region.")
+time.sleep(2)
+new_scene()
+text("For years, I have studied the incredible creatures known as")
+text("Pokémon - beings with mysterious powers that live alongside")
+text("humans in harmony.")
+time.sleep(3)
+new_scene()
+text("But recently, something has disturbed the balance of our world...")
+time.sleep(2)
+new_scene()
+text("Deep within Cerulean Cave, an ancient and powerful Pokémon has")
+text("awakened. Its name is MEWTWO - a legendary psychic-type Pokémon")
+text("of unmatched intelligence and strength.")
+time.sleep(3)
+new_scene()
+text("Mewtwo was created through genetic experiments, and its power")
+text("has grown beyond anything we've ever encountered. It's said that")
+text("only a true Pokémon Master can face such a legendary being.")
+time.sleep(3)
+new_scene()
+text("Your mission, should you choose to accept it, is to become that")
+text("Master. Travel across the Kanto region, collect the 8 Gym Badges")
+text("by defeating each Gym Leader, and grow strong enough to challenge")
+text("Mewtwo in Cerulean Cave.")
+time.sleep(3)
+new_scene()
+text("The path ahead won't be easy:")
+text("  • Battle wild Pokémon and trainers to gain experience")
+text("  • Capture new Pokémon to build your team")
+text("  • Challenge Gym Leaders to earn their badges")
+text("  • Explore special areas to find rare Pokémon and items")
+text("  • Once you have all 8 badges, venture into Cerulean Cave")
+time.sleep(4)
+new_scene()
+text("Remember: Mewtwo will only reveal itself to those who have")
+text("proven their worth by collecting all 8 Gym Badges.")
+time.sleep(2)
+new_scene()
+text("But first, every trainer needs their first Pokémon partner.")
+text("Choose wisely, as this Pokémon will be with you from the")
+text("very beginning of your journey!")
+time.sleep(3)
+# Show starter Pokémon
+new_scene()
+text(f"So, {name}, which Pokémon will you choose?\n")
 time.sleep(1)
-
 for i, species in enumerate(starter_pokemon, start=1):
     data = original_pokemon_data[species]
     log_print(f"{i}) {species}")
     log_print(f"   Type: {', '.join(data['type'])}")
     log_print(f"   HP: {data['base_hp']}  ATK: {data['base_atk']}  DEF: {data['base_defense']}  SPD: {data['base_speed']}")
-    log_print("")  # blank line
-
-choice_temp = i in enumerate(starter_pokemon)
+    log_print("")
 choice = ginput("Choose your starter: ", "1", "2", "3")
 starter_species = starter_pokemon[int(choice)-1]
-
 player_pokemon = {
     1: {
         "nickname": starter_species,
@@ -2047,49 +2026,102 @@ player_pokemon = {
         "pokedex_inv_id": 1
     }
 }
-
 new_scene()
-text(f"Nice choice! {starter_pokemon[int(choice)-1]} is a great pokemon.")
-text("Now lets give you some tips")
+text(f"Excellent choice, {name}! {starter_species} is a powerful ally.")
+text(f"{starter_species} looks at you with determination in its eyes.")
 time.sleep(2)
 new_scene()
-text("First, at any point in the game, if there is an input, then if you type 'p', it will open the pause menu. Maybe try it after the instructions.")
-time.sleep(2)
+text("Now, let me give you some important advice for your journey:")
+time.sleep(1)
 new_scene()
-text("If you ever want to save your game, you can do so in the pause menu, or if you ever want to load a save, you can do so in the pause menu.")
-time.sleep(2)
+text("TIP #1: THE PAUSE MENU")
+text("At any point during your adventure, when you see an input prompt,")
+text("you can type 'P' to open the pause menu. There you can:")
+text("  • Save your progress")
+text("  • Check your Pokédex")
+text("  • View your inventory")
+text("  • See the map of discovered locations")
+time.sleep(4)
 new_scene()
-text("There are also some really strong pokemon out there so be careful, but they could also make you stronger, which may help you in finding and beating Mewtwo, one of the strongest and smartest pokemon out there, and also every pokemon trainers goal")
-time.sleep(2)
+text("TIP #2: YOUR JOURNEY PATH")
+text("Here's the recommended route to collect all 8 Gym Badges:")
+text("  1. Pallet Town (START) → Route 1 → Viridian City")
+text("  2. Route 2 → Pewter City (Badge #1: Brock)")
+text("  3. Route 3 → Cerulean City (Badge #2: Misty)")
+text("  4. Route 4 → Vermilion City (Badge #3: Lt. Surge)")
+text("  5. Route 5 → Lavender Town → Route 6 → Celadon City (Badge #4)")
+text("  6. Route 7 → Fuchsia City (Badge #5)")
+text("  7. Route 8 → Saffron City (Badge #6)")
+text("  8. Route 9 → Cinnabar Island (Badge #7)")
+text("  9. Return to Viridian City (Badge #8: Giovanni)")
+text("  10. Finally, enter Cerulean Cave to face MEWTWO!")
+time.sleep(6)
 new_scene()
-text("If you find and beat Mewtwo, then you would be considered one of if not the BEST pokemon trainers out there, so get out there, explore, and try to catch them all.")
-time.sleep(2)
+text("TIP #3: TRAINING AND PREPARATION")
+text("Don't rush! Take time to:")
+text("  • Battle wild Pokémon to level up your team")
+text("  • Explore special areas for rare Pokémon and items")
+text("  • Visit Pokémon Centers to heal (they're free!)")
+text("  • Buy potions and Pokéballs at shops")
+text("  • Catch diverse Pokémon types to counter Gym Leaders")
+time.sleep(5)
 new_scene()
-text("Alright lets get you into your first battle.")
+text("TIP #4: MEWTWO")
+text("Remember, Mewtwo is incredibly powerful. You'll need:")
+text("  • All 8 Gym Badges to access Cerulean Cave")
+text("  • A well-trained team of high-level Pokémon")
+text("  • Plenty of healing items")
+text("  • Strategy and determination!")
+time.sleep(4)
+new_scene()
+text("Alright, that's enough talk! Let's test your skills with your")
+text("first battle. A wild Rattata has appeared!")
+time.sleep(2)
 new_scene()
 enemy_pokemon = {
     "species_name": "Rattata",
     "name": "Wild Rattata",
-    "level": 2,
-    "hp": 12,
-    "max_hp": 12,
-    "atk": 4,
-    "defense": 2,
-    "speed": 5,
+    "level": 3,
+    "hp": 15,
+    "max_hp": 15,
+    "atk": 5,
+    "defense": 3,
+    "speed": 6,
     "moves": ["Tackle"]
 }
-battle(player_pokemon, enemy_pokemon, "wild")
-
-text("\nWell now that you have won your first fight, it is time for you to head out to the first town, so get out there and enjoy yourself!")
-time.sleep(2)
+result = battle(player_pokemon, enemy_pokemon, "wild")
+if result == "win":
+    new_scene()
+    text("Congratulations on your first victory!")
+    time.sleep(1)
+else:
+    new_scene()
+    text("Don't worry, every trainer loses sometimes. Let me heal your")
+    text("Pokémon for you.")
+    heal_all_pokemon()
+    time.sleep(2)
 new_scene()
-
+text("You're ready now! Your adventure begins in Pallet Town.")
+text("")
+text("Remember your goal:")
+text("  → Collect all 8 Gym Badges")
+text("  → Explore and train your Pokémon")
+text("  → Face Mewtwo in Cerulean Cave")
+text("")
+text(f"The fate of the Kanto region rests in your hands, {name}!")
+text("Good luck, and may you become the ultimate Pokémon Master!")
+time.sleep(4)
 # Give starter items
 player_inv.extend(["Health Potion", "Health Potion", "Pokeball", "Pokeball", "Pokeball"])
-text("You received some starter items!")
-text("- 2x Health Potion")
-text("- 3x Pokeball")
-time.sleep(2)
-
+new_scene()
+text("=" * 60)
+text("STARTER PACK RECEIVED!")
+text("=" * 60)
+text("Professor Oak hands you a backpack with:")
+text("  • 2x Health Potion (heals 20 HP)")
+text("  • 3x Pokéball (for catching wild Pokémon)")
+text("")
+text("Use them wisely on your journey!")
+time.sleep(3)
 # Main game loop - start in Pallet Town
 enter_city("Pallet Town")
