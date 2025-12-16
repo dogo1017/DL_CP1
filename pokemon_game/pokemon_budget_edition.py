@@ -2,7 +2,6 @@
 
 # I am already sorry for the amount of pain you will probably go through trying to avoid bugs in this game but have fun I guess
 
-
 import json
 import os
 import time
@@ -1841,6 +1840,7 @@ def travel_route(route_name, destination, city_name):
                         time.sleep(1)
                     elif result == "lose":
                         log_print("\nYou blacked out and returned to the Pokemon Center!")
+                        time.sleep(2)
                         heal_all_pokemon()
                         enter_city(city_name)
                     
@@ -1871,6 +1871,7 @@ def travel_route(route_name, destination, city_name):
                 
                 if result == "lose":
                     log_print("\nYou blacked out and returned to the Pokemon Center!")
+                    time.sleep(2)
                     heal_all_pokemon()
                     enter_city(city_name)
                 
