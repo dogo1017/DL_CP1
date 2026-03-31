@@ -414,7 +414,7 @@ async def main():
         return True
 
     # --- Main Game ---
-    def run():
+    async def run():
         # Connection screen
         server_address, player_name = show_connection_screen()
         if not server_address:
@@ -447,6 +447,7 @@ async def main():
             msg = font.render(f'Connecting to server... ({elapsed}s)', True, (255, 255, 255))
             screen.blit(msg, (SCREEN_WIDTH // 2 - msg.get_width() // 2, SCREEN_HEIGHT // 2))
             pygame.display.flip()
+            await asyncio.sleep(0)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -624,6 +625,8 @@ async def main():
                 screen.blit(text, (10, leaderboard_y + 30 + i * 25))
             
             pygame.display.flip()
+
+            await asyncio.sleep(0) 
         
         pygame.quit()
     run()
