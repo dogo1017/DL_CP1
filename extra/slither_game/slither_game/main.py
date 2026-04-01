@@ -270,36 +270,36 @@ async def main():
 
     # Shows the server address and name input screen and returns both strings, or (None, None) if cancelled
     async def show_connection_screen():
-        input_box = pygame.Rect(SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2 - 100, 600, 40)
-        name_box = pygame.Rect(SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2 - 30, 600, 40)
-        color_inactive = pygame.Color('lightskyblue3')
+        # Set your permanent server address here
+        PERMANENT_SERVER = "abc123.ngrok-free.app" 
+        
+        # Position the name box in the center
+        name_box = pygame.Rect(SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2 - 20, 600, 40)
         color_active = pygame.Color('dodgerblue2')
-        server_text = ''
         name_text = ''
-        active_box = 'server'
+        
         title_font = pygame.font.Font(None, 72)
 
         while True:
             screen.fill(BG_COLOR)
+            
+            # Title
             title = title_font.render('SLITHER.IO MULTIPLAYER', True, (0, 255, 0))
             screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 100))
 
-            inst1 = font.render('Enter Server Address', True, (255, 255, 255))
-            inst2 = font.render('Example: abc123.ngrok-free.app', True, (200, 200, 200))
-            inst3 = small_font.render('Press TAB to switch fields, ENTER to connect, ESC to quit', True, (150, 150, 150))
-            screen.blit(inst1, (SCREEN_WIDTH // 2 - inst1.get_width() // 2, SCREEN_HEIGHT // 2 - 180))
-            screen.blit(inst2, (SCREEN_WIDTH // 2 - inst2.get_width() // 2, SCREEN_HEIGHT // 2 - 140))
-            screen.blit(inst3, (SCREEN_WIDTH // 2 - inst3.get_width() // 2, SCREEN_HEIGHT - 100))
+            # Instructions
+            inst1 = font.render('Enter Your Name', True, (255, 255, 255))
+            inst2 = small_font.render('Press ENTER to play, ESC to quit', True, (150, 150, 150))
+            screen.blit(inst1, (SCREEN_WIDTH // 2 - inst1.get_width() // 2, SCREEN_HEIGHT // 2 - 80))
+            screen.blit(inst2, (SCREEN_WIDTH // 2 - inst2.get_width() // 2, SCREEN_HEIGHT - 100))
 
-            server_label = small_font.render('Server:', True, (255, 255, 255))
-            screen.blit(server_label, (input_box.x, input_box.y - 25))
-            pygame.draw.rect(screen, color_active if active_box == 'server' else color_inactive, input_box, 2)
-            screen.blit(font.render(server_text, True, (255, 255, 255)), (input_box.x + 5, input_box.y + 5))
-
+            # Name Input Box
             name_label = small_font.render('Your Name:', True, (255, 255, 255))
             screen.blit(name_label, (name_box.x, name_box.y - 25))
-            pygame.draw.rect(screen, color_active if active_box == 'name' else color_inactive, name_box, 2)
-            screen.blit(font.render(name_text, True, (255, 255, 255)), (name_box.x + 5, name_box.y + 5))
+            pygame.draw.rect(screen, color_active, name_box, 2)
+            
+            name_surface = font.render(name_text, True, (255, 255, 255))
+            screen.blit(name_surface, (name_box.x + 5, name_box.y + 5))
 
             pygame.display.flip()
             await asyncio.sleep(0)
@@ -307,24 +307,23 @@ async def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return None, None
+                
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return None, None
-                    elif event.key == pygame.K_TAB:
-                        active_box = 'name' if active_box == 'server' else 'server'
+                    
                     elif event.key == pygame.K_RETURN:
-                        if server_text and name_text:
-                            return server_text, name_text
+                        if name_text.strip(): # Ensure they entered something
+                            return PERMANENT_SERVER, name_text
+                    
                     elif event.key == pygame.K_BACKSPACE:
-                        if active_box == 'server':
-                            server_text = server_text[:-1]
-                        else:
-                            name_text = name_text[:-1]
+                        name_text = name_text[:-1]
+                    
                     else:
-                        if active_box == 'server' and len(server_text) < 100:
-                            server_text += event.unicode
-                        elif active_box == 'name' and len(name_text) < 20:
+                        # Filter for actual characters and limit length
+                        if len(name_text) < 20 and event.unicode.isprintable():
                             name_text += event.unicode
+
 
 
     # Shows a death screen counting down, then returns True to respawn or False to quit
