@@ -361,10 +361,7 @@ async def main():
 
         network = NetworkManager()
 
-        if '.ngrok' in server_address or '.playit' in server_address:
-            server_url = f"wss://{server_address}"
-        else:
-            server_url = f"ws://{server_address}"
+        server_url = f"wss://orlando-nonexplorative-undeniably.ngrok-free.dev"
 
         # Show connecting screen while waiting for handshake
         connect_task = asyncio.ensure_future(network.connect(server_url, player_name, player_color))
